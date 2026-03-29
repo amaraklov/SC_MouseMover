@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mouse Drift UI Mockup</title>
+  <style>
+    :root {
+      --bg: #08111c;
+      --panel: #1b1914;
+      --panel-2: #251f15;
+      --glow: #ffb347;
+      --glow-soft: rgba(255, 179, 71, 0.28);
+      --text: #ffd28c;
+      --muted: #a7834f;
+      --danger: #ff7e68;
+      --danger-soft: rgba(255, 126, 104, 0.18);
+      --line: rgba(255, 191, 95, 0.78);
+      --input-bg: rgba(255, 191, 95, 0.05);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,179,71,0.12), transparent 30%),
+        linear-gradient(180deg, #05080d 0%, #091321 100%);
+      font-family: Inter, system-ui, sans-serif;
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(930px, 96vw);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(39,31,20,0.95), rgba(20,18,14,0.98));
+      border-radius: 24px;
+      box-shadow:
+        0 0 0 1px rgba(255,188,92,0.18),
+        0 0 40px rgba(0,0,0,0.45),
+        inset 0 0 50px rgba(255,179,71,0.06);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel {
+      width: 100%;
+      padding: 18px 18px 14px;
+    }
+
+    .hud-stage {
+      position: relative;
+    }
+
+    .svg-shell {
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(255,179,71,0.18));
+    }
+
+
+    .notice-box {
+      position: absolute;
+      top: 12.5%;
+      left: 76%;
+      width: 15%;
+      height: 53%;
+      border-radius: 22px;
+      border: 1px solid rgba(255,191,95,0.34);
+      background: linear-gradient(180deg, rgba(23,20,15,0.9), rgba(18,16,12,0.95));
+      box-shadow: inset 0 0 24px rgba(255,179,71,0.08);
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+    }
+
+    .notice-title {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #ffd27d;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,191,95,0.22);
+    }
+
+    .notice-list {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .notice-item {
+      border-radius: 9px;
+      border: 1px solid rgba(255,191,95,0.22);
+      background: rgba(255,191,95,0.04);
+      padding: 6px 7px;
+      line-height: 1.25;
+      font-size: 11px;
+      color: #ffdca2;
+    }
+
+    .notice-item.warn {
+      border-color: rgba(255,126,104,0.42);
+      color: #ffb29e;
+      background: rgba(255,126,104,0.09);
+    }
+
+    .svg-btn {
+      cursor: pointer;
+      transition: filter 140ms ease, opacity 140ms ease;
+    }
+
+    .svg-btn:hover {
+      filter: brightness(1.06) drop-shadow(0 0 8px rgba(255,179,71,0.2));
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="hud-stage">
+      <svg class="svg-shell" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" aria-label="Sci-fi SVG control panel">
+        <defs>
+          <linearGradient id="panelFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3a2d18" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#211b12" stop-opacity="0.98"/>
+          </linearGradient>
+          <linearGradient id="barFill" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#ffcf64"/>
+            <stop offset="100%" stop-color="#fff2a6"/>
+          </linearGradient>
+          <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="hardGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.4" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0
+                                                         0 1 0 0 0
+                                                         0 0 1 0 0
+                                                         0 0 0 16 -7" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <pattern id="scanLines" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="transparent"/>
+            <rect width="8" height="1.1" y="0" fill="rgba(255,191,95,0.08)"/>
+          </pattern>
+        </defs>
+
+        <rect x="40" y="40" rx="42" ry="42" width="1120" height="610" fill="url(#panelFill)" stroke="rgba(255,191,95,0.34)" stroke-width="3"/>
+        <rect x="55" y="55" rx="30" ry="30" width="1060" height="460" fill="rgba(255,191,95,0.04)" stroke="rgba(255,191,95,0.12)" stroke-width="2"/>
+        <rect x="55" y="55" rx="30" ry="30" width="1060" height="460" fill="url(#scanLines)" opacity="0.5"/>
+        <rect x="900" y="92" rx="28" ry="28" width="188" height="396" fill="rgba(255,191,95,0.025)" stroke="rgba(255,191,95,0.10)" stroke-width="1.5"/>
+        <text x="85" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">MOUSE DRIFT</text>
+        <text id="svgMouseInterval" x="85" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">4800 ms</text>
+
+        <text x="710" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">[ Key Loop</text>
+        <text id="svgKeyInterval" x="710" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">2.50 s</text>
+
+        <rect x="160" y="480" width="700" height="54" rx="8" fill="rgba(255,191,95,0.08)" stroke="rgba(255,191,95,0.18)" stroke-width="1.5"/>
+        <g fill="#ffcc79" font-size="13" font-family="monospace" letter-spacing="1">
+          <text x="178" y="497">LIVE VALUES</text>
+        </g>
+        <g fill="#ffd893" font-size="12" font-family="monospace">
+          <text id="telemetryMouseSec" x="178" y="513">Mouse Sec: 4.80</text>
+          <text id="telemetryKeySec" x="388" y="513">Key Sec: 2.50</text>
+          <text id="telemetryMaxPx" x="598" y="513">Max Px: 96</text>
+          <text id="telemetryMoves" x="178" y="528">Moves: 16</text>
+          <text id="telemetrySmooth" x="388" y="528">Smooth: 12</text>
+          <text id="telemetryMoveDur" x="598" y="528">Move Sec: 0.18</text>
+        </g>
+
+        <g transform="translate(110,160)" filter="url(#hardGlow)" opacity="0.95">
+          <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
+          <rect id="leftBarFill" x="4" y="128" width="20" height="118" fill="url(#barFill)"/>
+          <rect id="leftBarHot" class="svg-btn" x="-10" y="-8" width="48" height="266" fill="transparent"/>
+          <g fill="#ffd77d" font-size="12" font-family="monospace">
+            <text x="42" y="16">255</text>
+            <text x="42" y="52">213</text>
+            <text x="42" y="88">170</text>
+            <text x="42" y="124">128</text>
+            <text x="42" y="160">85</text>
+            <text x="42" y="196">43</text>
+            <text x="42" y="232">0</text>
+          </g>
+          <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.5">DIST</text>
+        </g>
+
+        <g transform="translate(828,160)" filter="url(#hardGlow)" opacity="0.95">
+          <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
+          <rect id="rightBarFill" x="4" y="128" width="20" height="118" fill="url(#barFill)"/>
+          <rect id="rightBarHot" class="svg-btn" x="-10" y="-8" width="48" height="266" fill="transparent"/>
+          <g fill="#ffd77d" font-size="12" font-family="monospace" text-anchor="end">
+            <text x="-14" y="16">4.5</text>
+            <text x="-14" y="52">3.8</text>
+            <text x="-14" y="88">3.2</text>
+            <text x="-14" y="124">2.5</text>
+            <text x="-14" y="160">1.8</text>
+            <text x="-14" y="196">1.2</text>
+            <text x="-14" y="232">0.5</text>
+          </g>
+          <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.5">KEY SEC</text>
+        </g>
+
+        <g transform="translate(252,160)" filter="url(#hardGlow)" opacity="0.9">
+          <rect x="0" y="0" width="20" height="250" fill="none" stroke="#ffd77d" stroke-width="2.4"/>
+          <rect id="movesBarFill" x="3" y="128" width="14" height="118" fill="url(#barFill)"/>
+          <rect id="movesBarHot" class="svg-btn" x="-10" y="-8" width="40" height="266" fill="transparent"/>
+          <g fill="#ffd77d" font-size="10" font-family="monospace">
+            <text x="26" y="16">32</text>
+            <text x="26" y="52">26</text>
+            <text x="26" y="88">21</text>
+            <text x="26" y="124">16</text>
+            <text x="26" y="160">12</text>
+            <text x="26" y="196">8</text>
+            <text x="26" y="232">4</text>
+          </g>
+          <text x="10" y="286" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">MOVES</text>
+        </g>
+
+        <g transform="translate(300,160)" filter="url(#hardGlow)" opacity="0.9">
+          <rect x="0" y="0" width="20" height="250" fill="none" stroke="#ffd77d" stroke-width="2.4"/>
+          <rect id="smoothBarFill" x="3" y="128" width="14" height="118" fill="url(#barFill)"/>
+          <rect id="smoothBarHot" class="svg-btn" x="-10" y="-8" width="40" height="266" fill="transparent"/>
+          <text x="10" y="-34" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">SMOOTH</text>
+          <g fill="#ffd77d" font-size="10" font-family="monospace">
+            <text x="26" y="16">20</text>
+            <text x="26" y="52">17</text>
+            <text x="26" y="88">14</text>
+            <text x="26" y="124">12</text>
+            <text x="26" y="160">9</text>
+            <text x="26" y="196">6</text>
+            <text x="26" y="232">4</text>
+          </g>
+        </g>
+
+        <g transform="translate(348,160)" filter="url(#hardGlow)" opacity="0.9">
+          <rect x="0" y="0" width="20" height="250" fill="none" stroke="#ffd77d" stroke-width="2.4"/>
+          <rect id="durationBarFill" x="3" y="128" width="14" height="118" fill="url(#barFill)"/>
+          <rect id="durationBarHot" class="svg-btn" x="-10" y="-8" width="40" height="266" fill="transparent"/>
+          <g fill="#ffd77d" font-size="10" font-family="monospace">
+            <text x="26" y="16">0.50</text>
+            <text x="26" y="52">0.42</text>
+            <text x="26" y="88">0.35</text>
+            <text x="26" y="124">0.28</text>
+            <text x="26" y="160">0.20</text>
+            <text x="26" y="196">0.12</text>
+            <text x="26" y="232">0.05</text>
+          </g>
+          <text x="10" y="286" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">MOVE SEC</text>
+        </g>
+
+        <g transform="translate(585,262)" filter="url(#hardGlow)" stroke="#ffc96f" fill="none" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.96">
+          <path d="M0,-110 L28,-92 L36,-56 L30,-18 L58,18 L46,40 L22,34 L10,82 L0,96 L-10,82 L-22,34 L-46,40 L-58,18 L-30,-18 L-36,-56 L-28,-92 Z"/>
+          <path d="M0,-96 L16,-82 L20,-58 L16,-26 L32,-6 L26,10 L12,6 L4,44 L0,52 L-4,44 L-12,6 L-26,10 L-32,-6 L-16,-26 L-20,-58 L-16,-82 Z"/>
+          <path d="M-92,12 L-58,-4 L-38,-16 L-14,-20"/>
+          <path d="M92,12 L58,-4 L38,-16 L14,-20"/>
+          <path d="M-74,28 L-44,22 L-22,26"/>
+          <path d="M74,28 L44,22 L22,26"/>
+          <path d="M-30,-42 L30,-42"/>
+          <path d="M-24,-14 L24,-14"/>
+          <path d="M-20,12 L20,12"/>
+          <circle cx="0" cy="-58" r="8"/>
+          <circle cx="0" cy="-58" r="14" opacity="0.45"/>
+          <path d="M-14,96 L-24,118"/>
+          <path d="M14,96 L24,118"/>
+        </g>
+
+        <rect x="160" y="540" width="336" height="44" rx="4" fill="#ffe57a" filter="url(#softGlow)"/>
+        <rect x="524" y="540" width="336" height="44" rx="4" fill="#ffe57a" filter="url(#softGlow)"/>
+        <text id="mouseStatusStrip" x="328" y="570" text-anchor="middle" fill="#9b611d" font-size="24" letter-spacing="3">MOUSE IDLE</text>
+        <text id="keyStatusStrip" x="692" y="570" text-anchor="middle" fill="#9b611d" font-size="24" letter-spacing="3">KEY IDLE</text>
+
+        <g class="svg-btn" id="f12BtnGroup" transform="translate(287,610)" tabindex="0" role="button" aria-label="F12 toggle mouse">
+          <rect id="f12BtnOuter" x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+          <rect id="f12BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+          <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F12</text>
+        </g>
+        <g class="svg-btn" id="f11BtnGroup" transform="translate(651,610)" tabindex="0" role="button" aria-label="F11 toggle key spam">
+            <rect id="f11BtnOuter" x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+            <rect id="f11BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F11</text>
+        </g>
+      </svg>
+      <aside class="notice-box" aria-label="System notices">
+        <div class="notice-title">Notices</div>
+        <div id="noticeList" class="notice-list">
+          <div class="notice-item">System initialized</div>
+        </div>
+      </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      mouseOn: false,
+      keyOn: false,
+      intervalSec: 4.8,
+      maxPixels: 96,
+      movesBeforeReturn: 16,
+      smoothSteps: 12,
+      moveDuration: 0.18,
+      keyInterval: 2.5,
+    };
+
+    const MOUSE_MIN_SEC = 0.6;
+    const MOUSE_MAX_SEC = 9.0;
+    const KEY_MIN_SEC = 0.5;
+    const KEY_MAX_SEC = 4.5;
+    const DIST_MIN = 0;
+    const DIST_MAX = 255;
+    const MOVES_MIN = 4;
+    const MOVES_MAX = 32;
+    const DURATION_MIN = 0.05;
+    const DURATION_MAX = 0.5;
+    const SMOOTH_MIN = 4;
+    const SMOOTH_MAX = 20;
+
+    const els = {
+      svgMouseInterval: document.getElementById('svgMouseInterval'),
+      svgKeyInterval: document.getElementById('svgKeyInterval'),
+      telemetryMouseSec: document.getElementById('telemetryMouseSec'),
+      telemetryKeySec: document.getElementById('telemetryKeySec'),
+      telemetryMaxPx: document.getElementById('telemetryMaxPx'),
+      telemetryMoves: document.getElementById('telemetryMoves'),
+      telemetrySmooth: document.getElementById('telemetrySmooth'),
+      telemetryMoveDur: document.getElementById('telemetryMoveDur'),
+      mouseStatusStrip: document.getElementById('mouseStatusStrip'),
+      keyStatusStrip: document.getElementById('keyStatusStrip'),
+      noticeList: document.getElementById('noticeList'),
+      leftBarFill: document.getElementById('leftBarFill'),
+      rightBarFill: document.getElementById('rightBarFill'),
+      leftBarHot: document.getElementById('leftBarHot'),
+      rightBarHot: document.getElementById('rightBarHot'),
+      movesBarFill: document.getElementById('movesBarFill'),
+      movesBarHot: document.getElementById('movesBarHot'),
+      smoothBarFill: document.getElementById('smoothBarFill'),
+      smoothBarHot: document.getElementById('smoothBarHot'),
+      durationBarFill: document.getElementById('durationBarFill'),
+      durationBarHot: document.getElementById('durationBarHot'),
+      f11BtnOuter: document.getElementById('f11BtnOuter'),
+      f11BtnInner: document.getElementById('f11BtnInner'),
+      f12BtnOuter: document.getElementById('f12BtnOuter'),
+      f12BtnInner: document.getElementById('f12BtnInner'),
+      f11BtnGroup: document.getElementById('f11BtnGroup'),
+      f12BtnGroup: document.getElementById('f12BtnGroup'),
+    };
+
+    const prevState = {
+      mouseOn: false,
+      keyOn: false,
+      maxPixels: state.maxPixels,
+      smoothSteps: state.smoothSteps,
+      movesBeforeReturn: state.movesBeforeReturn,
+      moveDuration: state.moveDuration,
+      keyInterval: state.keyInterval,
+    };
+
+    function buttonColors(isOn) {
+      return isOn
+        ? {
+            outerFill: '#6a3328',
+            outerStroke: '#ff967e',
+            innerFill: 'rgba(255,126,104,0.16)',
+          }
+        : {
+            outerFill: '#30261a',
+            outerStroke: '#ffd27d',
+            innerFill: 'rgba(255,179,71,0.08)',
+          };
+    }
+
+    function applyButtonState(outer, inner, isOn) {
+      const colors = buttonColors(isOn);
+      outer.setAttribute('fill', colors.outerFill);
+      outer.setAttribute('stroke', colors.outerStroke);
+      inner.setAttribute('fill', colors.innerFill);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function msToSec(intervalMs) {
+      return intervalMs / 1000;
+    }
+
+    function secToMs(intervalSec) {
+      return Math.round(intervalSec * 1000);
+    }
+
+    function applyBackendState(newState) {
+      if (typeof newState.mouseOn === 'boolean') {
+        state.mouseOn = newState.mouseOn;
+      }
+      if (typeof newState.keyOn === 'boolean') {
+        state.keyOn = newState.keyOn;
+      }
+      if (typeof newState.intervalMs === 'number') {
+        state.intervalSec = clamp(msToSec(newState.intervalMs), MOUSE_MIN_SEC, MOUSE_MAX_SEC);
+      }
+      if (typeof newState.maxPixels === 'number') {
+        state.maxPixels = clamp(newState.maxPixels, DIST_MIN, DIST_MAX);
+      }
+      if (typeof newState.movesBeforeReturn === 'number') {
+        state.movesBeforeReturn = Math.max(1, newState.movesBeforeReturn);
+      }
+      if (typeof newState.smoothSteps === 'number') {
+        state.smoothSteps = Math.max(1, newState.smoothSteps);
+      }
+      if (typeof newState.moveDuration === 'number') {
+        state.moveDuration = Math.max(0, newState.moveDuration);
+      }
+      if (typeof newState.keyInterval === 'number') {
+        state.keyInterval = clamp(newState.keyInterval, KEY_MIN_SEC, KEY_MAX_SEC);
+      }
+    }
+
+    function updateBars() {
+      const leftPct = clamp((state.maxPixels - DIST_MIN) / (DIST_MAX - DIST_MIN), 0.05, 1);
+      const leftHeight = Math.round(236 * leftPct);
+      els.leftBarFill.setAttribute('height', leftHeight);
+      els.leftBarFill.setAttribute('y', 246 - leftHeight);
+
+      const rightPct = clamp((state.keyInterval - KEY_MIN_SEC) / (KEY_MAX_SEC - KEY_MIN_SEC), 0.05, 1);
+      const rightHeight = Math.round(236 * rightPct);
+      els.rightBarFill.setAttribute('height', rightHeight);
+      els.rightBarFill.setAttribute('y', 246 - rightHeight);
+
+      const movesPct = clamp((state.movesBeforeReturn - MOVES_MIN) / (MOVES_MAX - MOVES_MIN), 0.05, 1);
+      const movesHeight = Math.round(236 * movesPct);
+      els.movesBarFill.setAttribute('height', movesHeight);
+      els.movesBarFill.setAttribute('y', 246 - movesHeight);
+
+      const smoothPct = clamp((state.smoothSteps - SMOOTH_MIN) / (SMOOTH_MAX - SMOOTH_MIN), 0.05, 1);
+      const smoothHeight = Math.round(236 * smoothPct);
+      els.smoothBarFill.setAttribute('height', smoothHeight);
+      els.smoothBarFill.setAttribute('y', 246 - smoothHeight);
+
+      const durPct = clamp((state.moveDuration - DURATION_MIN) / (DURATION_MAX - DURATION_MIN), 0.05, 1);
+      const durHeight = Math.round(236 * durPct);
+      els.durationBarFill.setAttribute('height', durHeight);
+      els.durationBarFill.setAttribute('y', 246 - durHeight);
+    }
+
+    function addNotice(message, isWarn = false) {
+      const item = document.createElement('div');
+      item.className = isWarn ? 'notice-item warn' : 'notice-item';
+
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      item.textContent = `${hh}:${mm}:${ss} ${message}`;
+
+      els.noticeList.prepend(item);
+      while (els.noticeList.children.length > 8) {
+        els.noticeList.removeChild(els.noticeList.lastElementChild);
+      }
+    }
+
+    function render() {
+      els.svgMouseInterval.textContent = `${state.intervalSec.toFixed(2)} s`;
+      els.svgKeyInterval.textContent = `${state.keyInterval.toFixed(2)} s`;
+      els.mouseStatusStrip.textContent = state.mouseOn ? `MOUSE ON ${state.intervalSec.toFixed(2)}s` : `MOUSE OFF ${state.intervalSec.toFixed(2)}s`;
+      els.keyStatusStrip.textContent = state.keyOn ? `KEY ON ${state.keyInterval.toFixed(2)}s` : `KEY OFF ${state.keyInterval.toFixed(2)}s`;
+
+      els.telemetryMouseSec.textContent = `Mouse Sec: ${state.intervalSec.toFixed(2)}`;
+      els.telemetryKeySec.textContent = `Key Sec: ${state.keyInterval.toFixed(2)}`;
+      els.telemetryMaxPx.textContent = `Max Px: ${state.maxPixels}`;
+      els.telemetryMoves.textContent = `Moves: ${state.movesBeforeReturn}`;
+      els.telemetrySmooth.textContent = `Smooth: ${state.smoothSteps}`;
+      els.telemetryMoveDur.textContent = `Move Sec: ${state.moveDuration.toFixed(2)}`;
+
+      applyButtonState(els.f11BtnOuter, els.f11BtnInner, state.keyOn);
+      applyButtonState(els.f12BtnOuter, els.f12BtnInner, state.mouseOn);
+
+      updateBars();
+
+      if (state.mouseOn !== prevState.mouseOn) {
+        addNotice(state.mouseOn ? 'F12: Mouse drift enabled' : 'F12: Mouse drift disabled', !state.mouseOn);
+      }
+      if (state.keyOn !== prevState.keyOn) {
+        addNotice(state.keyOn ? 'F11: Key loop enabled' : 'F11: Key loop disabled', !state.keyOn);
+      }
+      if (Math.abs(state.maxPixels - prevState.maxPixels) >= 1) {
+        addNotice(`Distance set to ${state.maxPixels}px`);
+      }
+      if (Math.abs(state.smoothSteps - prevState.smoothSteps) >= 1) {
+        addNotice(`Smoothness set to ${state.smoothSteps} steps`);
+      }
+      if (Math.abs(state.movesBeforeReturn - prevState.movesBeforeReturn) >= 1) {
+        addNotice(`Jumps set to ${state.movesBeforeReturn}`);
+      }
+      if (Math.abs(state.moveDuration - prevState.moveDuration) >= 0.01) {
+        addNotice(`Move sec set to ${state.moveDuration.toFixed(2)}`);
+      }
+      if (Math.abs(state.keyInterval - prevState.keyInterval) >= 0.05) {
+        addNotice(`Key sec set to ${state.keyInterval.toFixed(2)}s`);
+      }
+
+      prevState.mouseOn = state.mouseOn;
+      prevState.keyOn = state.keyOn;
+      prevState.maxPixels = state.maxPixels;
+      prevState.smoothSteps = state.smoothSteps;
+      prevState.movesBeforeReturn = state.movesBeforeReturn;
+      prevState.moveDuration = state.moveDuration;
+      prevState.keyInterval = state.keyInterval;
+    }
+
+    async function pushSettings() {
+      if (window.pywebview && window.pywebview.api) {
+        await window.pywebview.api.update_settings({
+          intervalMs: secToMs(state.intervalSec),
+          maxPixels: state.maxPixels,
+          movesBeforeReturn: state.movesBeforeReturn,
+          smoothSteps: state.smoothSteps,
+          moveDuration: state.moveDuration,
+          keyInterval: state.keyInterval,
+        });
+      }
+    }
+
+    async function toggleMouse() {
+      if (window.pywebview && window.pywebview.api) {
+        const newState = await window.pywebview.api.toggle_mouse();
+        applyBackendState(newState);
+      } else {
+        state.mouseOn = !state.mouseOn;
+      }
+      render();
+    }
+
+    async function toggleKey() {
+      if (window.pywebview && window.pywebview.api) {
+        const newState = await window.pywebview.api.toggle_key();
+        applyBackendState(newState);
+      } else {
+        state.keyOn = !state.keyOn;
+      }
+      render();
+    }
+
+    function percentFromEvent(event, hotElement) {
+      const rect = hotElement.getBoundingClientRect();
+      const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+      return 1 - y;
+    }
+
+    function setDistanceFromBar(event) {
+      const pct = percentFromEvent(event, els.leftBarHot);
+      state.maxPixels = Math.round(clamp(DIST_MIN + pct * (DIST_MAX - DIST_MIN), DIST_MIN, DIST_MAX));
+      render();
+    }
+
+    function setSmoothFromBar(event) {
+      const pct = percentFromEvent(event, els.smoothBarHot);
+      state.smoothSteps = Math.round(clamp(SMOOTH_MIN + pct * (SMOOTH_MAX - SMOOTH_MIN), SMOOTH_MIN, SMOOTH_MAX));
+      render();
+    }
+
+    function setKeySecFromBar(event) {
+      const pct = percentFromEvent(event, els.rightBarHot);
+      state.keyInterval = clamp(KEY_MIN_SEC + pct * (KEY_MAX_SEC - KEY_MIN_SEC), KEY_MIN_SEC, KEY_MAX_SEC);
+      state.keyInterval = Math.round(state.keyInterval * 100) / 100;
+      render();
+    }
+
+    function setMovesFromBar(event) {
+      const pct = percentFromEvent(event, els.movesBarHot);
+      state.movesBeforeReturn = Math.round(clamp(MOVES_MIN + pct * (MOVES_MAX - MOVES_MIN), MOVES_MIN, MOVES_MAX));
+      render();
+    }
+
+    function setDurationFromBar(event) {
+      const pct = percentFromEvent(event, els.durationBarHot);
+      state.moveDuration = clamp(DURATION_MIN + pct * (DURATION_MAX - DURATION_MIN), DURATION_MIN, DURATION_MAX);
+      state.moveDuration = Math.round(state.moveDuration * 100) / 100;
+      render();
+    }
+
+    function wireBarDrag(hotElement, setter) {
+      let dragging = false;
+
+      hotElement.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        hotElement.setPointerCapture(event.pointerId);
+        setter(event);
+      });
+
+      hotElement.addEventListener('pointermove', (event) => {
+        if (!dragging) {
+          return;
+        }
+        setter(event);
+      });
+
+      hotElement.addEventListener('pointerup', async (event) => {
+        if (!dragging) {
+          return;
+        }
+        dragging = false;
+        setter(event);
+        await pushSettings();
+      });
+
+      hotElement.addEventListener('pointercancel', () => {
+        dragging = false;
+      });
+
+      hotElement.addEventListener('click', async (event) => {
+        setter(event);
+        await pushSettings();
+      });
+    }
+
+    async function pullState() {
+      if (!window.pywebview || !window.pywebview.api) {
+        return;
+      }
+
+      try {
+        const latest = await window.pywebview.api.get_state();
+        applyBackendState(latest);
+        render();
+      } catch (error) {
+      }
+    }
+
+    window.app = {
+      updateFromPython(newState) {
+        applyBackendState(newState);
+        render();
+      }
+    };
+
+    els.f12BtnGroup.addEventListener('click', toggleMouse);
+    els.f11BtnGroup.addEventListener('click', toggleKey);
+
+    wireBarDrag(els.leftBarHot, setDistanceFromBar);
+    wireBarDrag(els.rightBarHot, setKeySecFromBar);
+    wireBarDrag(els.movesBarHot, setMovesFromBar);
+    wireBarDrag(els.smoothBarHot, setSmoothFromBar);
+    wireBarDrag(els.durationBarHot, setDurationFromBar);
+
+    window.addEventListener('pywebviewready', async () => {
+      const initial = await window.pywebview.api.get_state();
+      applyBackendState(initial);
+      addNotice('Connected to backend');
+      render();
+      window.setInterval(pullState, 300);
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mouse Drift UI Mockup</title>
+  <style>
+    :root {
+      --bg: #08111c;
+      --panel: #1b1914;
+      --panel-2: #251f15;
+      --glow: #ffb347;
+      --glow-soft: rgba(255, 179, 71, 0.28);
+      --text: #ffd28c;
+      --muted: #a7834f;
+      --danger: #ff7e68;
+      --line: rgba(255, 191, 95, 0.78);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,179,71,0.12), transparent 30%),
+        linear-gradient(180deg, #05080d 0%, #091321 100%);
+      font-family: Inter, system-ui, sans-serif;
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(1100px, 94vw);
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel, .side {
+      background: linear-gradient(180deg, rgba(39,31,20,0.95), rgba(20,18,14,0.98));
+      border-radius: 24px;
+      box-shadow:
+        0 0 0 1px rgba(255,188,92,0.18),
+        0 0 40px rgba(0,0,0,0.45),
+        inset 0 0 50px rgba(255,179,71,0.06);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel {
+      padding: 18px 18px 14px;
+    }
+
+    .svg-shell {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(255,179,71,0.18));
+    }
+
+    .side {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .stat-card {
+      border-radius: 18px;
+      border: 1px solid rgba(255,191,95,0.25);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,179,71,0.04));
+      padding: 16px;
+      box-shadow: inset 0 0 18px rgba(255,179,71,0.05);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(255,179,71,0.25);
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-button {
+      width: 100%;
+      border: 1px solid rgba(255,191,95,0.25);
+      background: linear-gradient(180deg, rgba(255,191,95,0.08), rgba(255,191,95,0.02));
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: inset 0 0 12px rgba(255,179,71,0.04);
+    }
+
+    .mini-button:hover {
+      box-shadow: 0 0 0 1px rgba(255,191,95,0.28), inset 0 0 18px rgba(255,179,71,0.08);
+    }
+
+    .mini-button strong {
+      display: block;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+    }
+
+    .mini-button span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <svg class="svg-shell" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" aria-label="Sci-fi SVG control panel">
+        <defs>
+          <linearGradient id="panelFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3a2d18" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#211b12" stop-opacity="0.98"/>
+          </linearGradient>
+          <linearGradient id="barFill" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stop-color="#ffcf64"/>
+            <stop offset="100%" stop-color="#fff2a6"/>
+          </linearGradient>
+          <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="hardGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.4" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0
+                                                         0 1 0 0 0
+                                                         0 0 1 0 0
+                                                         0 0 0 16 -7" result="glow"/>
+            <feMerge>
+              <feMergeNode in="glow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <pattern id="scanLines" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="transparent"/>
+            <rect width="8" height="1.1" y="0" fill="rgba(255,191,95,0.08)"/>
+          </pattern>
+        </defs>
+
+        <rect x="40" y="40" rx="42" ry="42" width="940" height="610" fill="url(#panelFill)" stroke="rgba(255,191,95,0.34)" stroke-width="3"/>
+        <rect x="55" y="55" rx="30" ry="30" width="910" height="460" fill="rgba(255,191,95,0.04)" stroke="rgba(255,191,95,0.12)" stroke-width="2"/>
+        <rect x="55" y="55" rx="30" ry="30" width="910" height="460" fill="url(#scanLines)" opacity="0.5"/>
+
+        <text x="85" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">MOUSE DRIFT</text>
+        <text x="85" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">1199 ms</text>
+
+        <text x="710" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">KEY LOOP</text>
+        <text x="710" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">5.00 s</text>
+
+        <g transform="translate(110,160)" filter="url(#hardGlow)" opacity="0.95">
+          <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
+          <rect x="4" y="58" width="20" height="188" fill="url(#barFill)"/>
+          <g fill="#ffd77d" font-size="12" font-family="monospace">
+            <text x="42" y="16">10</text>
+            <text x="42" y="52">8</text>
+            <text x="42" y="88">6</text>
+            <text x="42" y="124">4</text>
+            <text x="42" y="160">2</text>
+            <text x="42" y="196">1</text>
+            <text x="42" y="232">0</text>
+          </g>
+        </g>
+
+        <g transform="translate(828,160)" filter="url(#hardGlow)" opacity="0.95">
+          <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
+          <rect x="4" y="94" width="20" height="152" fill="url(#barFill)"/>
+          <g fill="#ffd77d" font-size="12" font-family="monospace" text-anchor="end">
+            <text x="-14" y="16">10</text>
+            <text x="-14" y="52">8</text>
+            <text x="-14" y="88">6</text>
+            <text x="-14" y="124">4</text>
+            <text x="-14" y="160">2</text>
+            <text x="-14" y="196">1</text>
+            <text x="-14" y="232">0</text>
+          </g>
+        </g>
+
+        <g transform="translate(430,254)" filter="url(#hardGlow)" stroke="#ffc96f" fill="none" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+          <rect x="-38" y="-60" width="76" height="120" rx="6"/>
+          <path d="M-60,-20 L-38,-30 L-38,30 L-60,44 L-82,12 L-82,-12 Z"/>
+          <path d="M60,-20 L38,-30 L38,30 L60,44 L82,12 L82,-12 Z"/>
+          <path d="M-20,-92 L20,-92 L34,-60 L-34,-60 Z"/>
+          <path d="M-18,60 L-34,104 L-20,124 L0,82 L20,124 L34,104 L18,60 Z"/>
+          <path d="M-10,-32 L10,-32"/>
+          <path d="M-16,-6 L16,-6"/>
+          <path d="M-16,20 L16,20"/>
+          <circle cx="0" cy="-74" r="10"/>
+          <path d="M-100,18 L-66,18"/>
+          <path d="M66,18 L100,18"/>
+          <path d="M-94,-6 L-76,-28"/>
+          <path d="M94,-6 L76,-28"/>
+        </g>
+
+        <rect x="160" y="540" width="700" height="44" rx="4" fill="#ffe57a" filter="url(#softGlow)"/>
+        <text x="510" y="571" text-anchor="middle" fill="#9b611d" font-size="34" letter-spacing="8">SELF STATUS</text>
+
+        <g transform="translate(290,610)">
+          <g>
+            <rect x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+            <rect x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="28" font-weight="700" filter="url(#softGlow)">MSE</text>
+          </g>
+          <g transform="translate(100,0)">
+            <rect x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+            <rect x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="28" font-weight="700" filter="url(#softGlow)">KEY</text>
+          </g>
+          <g transform="translate(200,0)">
+            <rect x="0" y="0" width="82" height="74" rx="14" fill="#6a3328" stroke="#ff967e" stroke-width="3"/>
+            <rect x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,126,104,0.16)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffb0a0" font-size="28" font-weight="700" filter="url(#softGlow)">HOT</text>
+          </g>
+          <g transform="translate(300,0)">
+            <rect x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+            <rect x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F11</text>
+          </g>
+          <g transform="translate(400,0)">
+            <rect x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
+            <rect x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
+            <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F12</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <aside class="side">
+      <div class="stat-card">
+        <div class="stat-label">Mouse State</div>
+        <div class="stat-value">ACTIVE</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Key Spam</div>
+        <div class="stat-value">5.0s / [</div>
+      </div>
+
+      <div class="stack">
+        <button class="mini-button">
+          <strong>F12 Toggle</strong>
+          <span>Start / stop mouse drift</span>
+        </button>
+        <button class="mini-button">
+          <strong>F11 Toggle</strong>
+          <span>Start / stop bracket spam</span>
+        </button>
+        <button class="mini-button">
+          <strong>SVG Theme</strong>
+          <span>Reference-inspired amber HUD</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>
+<script src="app.js"></script>
