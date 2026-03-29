@@ -6,13 +6,12 @@ Move the mouse for certain amounts and intervals to avoid SC going to sleep.
 
 ## Features
 
-- Mouse drift loop with configurable:
-  - Mouse interval (seconds)
-  - Max movement distance (0-255 px)
-  - Moves before return
-  - Smooth steps
-  - Move duration
-- Key loop with configurable key interval
+- Mouse drift loop with configurable:  
+  - Max movement distance [DIST[ (0-255 px)
+  - Moves before return to original position
+  - Smooth steps (How smooth the movement is)
+  - Move Sec, how long between each move, in seconds
+- Key loop with configurable key interval (between key presses 0-4.5 sec)
 - Interactive SVG HUD with draggable bar controls
 - F11 hotkey for key loop toggle
 - F12 hotkey for mouse drift toggle
