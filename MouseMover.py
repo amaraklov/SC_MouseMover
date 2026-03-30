@@ -1,6 +1,7 @@
 import json
 import math
 import random
+import re
 import sys
 import threading
 import time
@@ -444,6 +445,17 @@ class MouseDriftEngine:
         self.smooth_steps = 12
         self.move_duration = 0.18
         self.key_interval = 2.5
+        self.mission_spam_duration = 3.0
+        self.mission_spam_count = 5
+        self.mission_detect_count = 0
+        self.total_bracket_presses = 0
+        self.last_spam_press_count = 0
+        self.last_spam_duration_used = 0.0
+        self.last_mission_detect_ts = 0.0
+
+        self.log_path = r"C:\Program Files\Roberts Space Industries\StarCitizen\HOTFIX\Game.log"
+        self.log_offset = 0
+        self.last_accept_ts = 0.0
 
         self.origin = None
         self.move_count = 0
@@ -464,6 +476,15 @@ class MouseDriftEngine:
             "smoothSteps": self.smooth_steps,
             "moveDuration": self.move_duration,
             "keyInterval": self.key_interval,
+            "missionSpamDuration": self.mission_spam_duration,
+            "missionSpamCount": self.mission_spam_count,
+            "missionDetectCount": self.mission_detect_count,
+            "totalBracketPresses": self.total_bracket_presses,
+            "lastSpamPressCount": self.last_spam_press_count,
+            "lastSpamDuration": self.last_spam_duration_used,
+            "lastMissionDetectTs": self.last_mission_detect_ts,
+            "logPath": self.log_path,
+            "logExists": Path(self.log_path).is_file(),
         }
 
         js = f"window.app && window.app.updateFromPython({json.dumps(state)});"
@@ -519,6 +540,12 @@ class MouseDriftEngine:
             self.smooth_steps = max(1, int(settings.get("smoothSteps", self.smooth_steps)))
             self.move_duration = max(0.0, float(settings.get("moveDuration", self.move_duration)))
             self.key_interval = max(0.1, float(settings.get("keyInterval", self.key_interval)))
+            self.mission_spam_duration = max(
+                0.0, min(6.0, float(settings.get("missionSpamDuration", self.mission_spam_duration)))
+            )
+            self.mission_spam_count = max(
+                1, int(settings.get("missionSpamCount", self.mission_spam_count))
+            )
 
         self.emit_state()
         return {"ok": True}
@@ -533,7 +560,123 @@ class MouseDriftEngine:
             "smoothSteps": self.smooth_steps,
             "moveDuration": self.move_duration,
             "keyInterval": self.key_interval,
+            "missionSpamDuration": self.mission_spam_duration,
+            "missionSpamCount": self.mission_spam_count,
+            "missionDetectCount": self.mission_detect_count,
+            "totalBracketPresses": self.total_bracket_presses,
+            "lastSpamPressCount": self.last_spam_press_count,
+            "lastSpamDuration": self.last_spam_duration_used,
+            "lastMissionDetectTs": self.last_mission_detect_ts,
+            "logPath": self.log_path,
+            "logExists": Path(self.log_path).is_file(),
         }
+
+    def set_log_path(self, path):
+        if not path:
+            return {"ok": False, "error": "empty-path"}
+
+        normalized = str(Path(path))
+        with self.lock:
+            self.log_path = normalized
+        self.reset_log_offset_to_end()
+        self.emit_state()
+        return {"ok": True, "path": self.log_path, "exists": Path(self.log_path).is_file()}
+
+    def choose_log_file(self):
+        if not self.window:
+            return {"ok": False, "error": "window-not-ready"}
+
+        try:
+            selected = self.window.create_file_dialog(
+                webview.OPEN_DIALOG,
+                allow_multiple=False,
+                file_types=("Log files (*.log)", "All files (*.*)"),
+            )
+        except Exception:
+            return {"ok": False, "error": "dialog-failed"}
+
+        if not selected:
+            return {"ok": False, "cancelled": True}
+
+        return self.set_log_path(selected[0])
+
+    def reset_log_offset_to_end(self):
+        path = Path(self.log_path)
+        if not path.is_file():
+            self.log_offset = 0
+            return
+
+        try:
+            with path.open("rb") as handle:
+                handle.seek(0, 2)
+                self.log_offset = handle.tell()
+        except OSError:
+            self.log_offset = 0
+
+    def is_mission_invite_line(self, line):
+        lowered = line.lower()
+        if "invite" not in lowered:
+            return False
+
+        # Mission invite only: all other invite categories are ignored.
+        return bool(re.search(r"\bmission\b", lowered))
+
+    def process_new_log_data(self, blob):
+        now = time.time()
+        cooldown = max(0.5, self.mission_spam_duration)
+
+        for raw_line in blob.splitlines():
+            line = raw_line.decode("utf-8", errors="ignore").strip()
+            if not line:
+                continue
+            if not self.is_mission_invite_line(line):
+                continue
+
+            if now - self.last_accept_ts < cooldown:
+                continue
+
+            sent = self.spam_accept_window()
+            if sent > 0:
+                self.mission_detect_count += 1
+                self.last_mission_detect_ts = now
+            self.last_accept_ts = now
+            self.emit_state()
+            break
+
+    def spam_accept_window(self):
+        press_count = max(1, self.mission_spam_count)
+        duration = max(0.0, self.mission_spam_duration)
+        sent = 0
+
+        if press_count == 1:
+            self.keyboard.press("[")
+            self.keyboard.release("[")
+            sent = 1
+            self.total_bracket_presses += sent
+            self.last_spam_press_count = sent
+            self.last_spam_duration_used = 0.0
+            return sent
+
+        spacing = duration / (press_count - 1) if duration > 0 else 0.0
+
+        for index in range(press_count):
+            if self.key_stop_event.is_set():
+                break
+
+            self.keyboard.press("[")
+            self.keyboard.release("[")
+            sent += 1
+
+            if index == press_count - 1:
+                continue
+
+            if spacing > 0 and self.key_stop_event.wait(spacing):
+                break
+
+        self.total_bracket_presses += sent
+        self.last_spam_press_count = sent
+        self.last_spam_duration_used = duration
+        return sent
 
     def toggle_mouse(self):
         if self.mouse_running:
@@ -571,6 +714,8 @@ class MouseDriftEngine:
         if self.key_running:
             return
 
+        self.reset_log_offset_to_end()
+        self.last_accept_ts = 0.0
         self.key_stop_event.clear()
         self.key_running = True
 
@@ -666,11 +811,34 @@ class MouseDriftEngine:
     def key_loop(self):
         try:
             while not self.key_stop_event.is_set():
-                self.keyboard.press("[")
-                self.keyboard.release("[")
+                path = Path(self.log_path)
+                if not path.is_file():
+                    if self.key_stop_event.wait(0.8):
+                        break
+                    continue
 
-                interval = self.key_interval * random.uniform(0.95, 1.05)
-                if self.key_stop_event.wait(interval):
+                try:
+                    size = path.stat().st_size
+                except OSError:
+                    if self.key_stop_event.wait(0.8):
+                        break
+                    continue
+
+                if size < self.log_offset:
+                    self.log_offset = 0
+
+                if size > self.log_offset:
+                    try:
+                        with path.open("rb") as handle:
+                            handle.seek(self.log_offset)
+                            blob = handle.read(size - self.log_offset)
+                            self.log_offset = handle.tell()
+                        self.process_new_log_data(blob)
+                    except OSError:
+                        if self.key_stop_event.wait(0.8):
+                            break
+
+                if self.key_stop_event.wait(0.2):
                     break
         finally:
             self.key_running = False
@@ -692,6 +860,12 @@ class Api:
 
     def toggle_key(self):
         return self.engine.toggle_key()
+
+    def choose_log_file(self):
+        return self.engine.choose_log_file()
+
+    def set_log_file(self, path):
+        return self.engine.set_log_path(path)
 
 
 def ui_path():

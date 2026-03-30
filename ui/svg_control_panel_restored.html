@@ -70,18 +70,47 @@
 
     .notice-box {
       position: absolute;
-      top: 12.5%;
-      left: 76%;
-      width: 15%;
-      height: 53%;
+      top: 11.5%;
+      left: 72.4%;
+      width: 20.8%;
+      height: 57%;
       border-radius: 22px;
       border: 1px solid rgba(255,191,95,0.34);
       background: linear-gradient(180deg, rgba(23,20,15,0.9), rgba(18,16,12,0.95));
       box-shadow: inset 0 0 24px rgba(255,179,71,0.08);
       padding: 12px;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto auto 1fr;
       gap: 10px;
+    }
+
+    .log-tools {
+      display: grid;
+      gap: 0;
+    }
+
+    .log-pick {
+      border-radius: 9px;
+      border: 1px solid rgba(255,191,95,0.28);
+      background: linear-gradient(180deg, rgba(255,191,95,0.12), rgba(255,191,95,0.04));
+      color: #ffdca2;
+      padding: 6px 7px;
+      font-size: 11px;
+      text-align: left;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .log-pick.active {
+      border-color: #7be9a6;
+      background: linear-gradient(180deg, rgba(74, 176, 110, 0.32), rgba(32, 86, 56, 0.28));
+      color: #eafff3;
+    }
+
+    .log-pick.inactive {
+      border-color: #ff967e;
+      background: linear-gradient(180deg, rgba(156, 62, 49, 0.42), rgba(92, 42, 35, 0.32));
+      color: #ffd5c8;
     }
 
     .notice-title {
@@ -97,8 +126,24 @@
       display: grid;
       align-content: start;
       gap: 6px;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       min-height: 0;
+      padding-right: 4px;
+    }
+
+    .notice-list::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .notice-list::-webkit-scrollbar-track {
+      background: rgba(255, 191, 95, 0.06);
+      border-radius: 8px;
+    }
+
+    .notice-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 191, 95, 0.38);
+      border-radius: 8px;
     }
 
     .notice-item {
@@ -168,12 +213,13 @@
         <rect x="40" y="40" rx="42" ry="42" width="1120" height="610" fill="url(#panelFill)" stroke="rgba(255,191,95,0.34)" stroke-width="3"/>
         <rect x="55" y="55" rx="30" ry="30" width="1060" height="460" fill="rgba(255,191,95,0.04)" stroke="rgba(255,191,95,0.12)" stroke-width="2"/>
         <rect x="55" y="55" rx="30" ry="30" width="1060" height="460" fill="url(#scanLines)" opacity="0.5"/>
-        <rect x="900" y="92" rx="28" ry="28" width="188" height="396" fill="rgba(255,191,95,0.025)" stroke="rgba(255,191,95,0.10)" stroke-width="1.5"/>
+        <rect x="850" y="92" rx="28" ry="28" width="238" height="396" fill="rgba(255,191,95,0.025)" stroke="rgba(255,191,95,0.10)" stroke-width="1.5"/>
         <text x="85" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">MOUSE DRIFT</text>
         <text id="svgMouseInterval" x="85" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">4800 ms</text>
 
-        <text x="710" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">[ Key Loop</text>
-        <text id="svgKeyInterval" x="710" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">2.50 s</text>
+        <text x="640" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">[ Key Loop</text>
+        <text x="640" y="116" fill="#d1a56a" font-size="12" letter-spacing="1.4">MISSION-ONLY AUTO ACCEPT</text>
+        <text id="svgKeyInterval" x="640" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">2.50 s</text>
 
         <rect x="160" y="480" width="700" height="54" rx="8" fill="rgba(255,191,95,0.08)" stroke="rgba(255,191,95,0.18)" stroke-width="1.5"/>
         <g fill="#ffcc79" font-size="13" font-family="monospace" letter-spacing="1">
@@ -181,11 +227,13 @@
         </g>
         <g fill="#ffd893" font-size="12" font-family="monospace">
           <text id="telemetryMouseSec" x="178" y="513">Mouse Sec: 4.80</text>
-          <text id="telemetryKeySec" x="388" y="513">Key Sec: 2.50</text>
+          <text id="telemetryKeySec" x="388" y="513">Spam Sec: 3.00</text>
           <text id="telemetryMaxPx" x="598" y="513">Max Px: 96</text>
+          <text id="telemetryMission" x="732" y="513">Missions: 0</text>
           <text id="telemetryMoves" x="178" y="528">Moves: 16</text>
           <text id="telemetrySmooth" x="388" y="528">Smooth: 12</text>
           <text id="telemetryMoveDur" x="598" y="528">Move Sec: 0.18</text>
+          <text id="telemetrySpamCount" x="732" y="528">[ Total: 0</text>
         </g>
 
         <g transform="translate(110,160)" filter="url(#hardGlow)" opacity="0.95">
@@ -204,20 +252,36 @@
           <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.5">DIST</text>
         </g>
 
-        <g transform="translate(828,160)" filter="url(#hardGlow)" opacity="0.95">
+        <g transform="translate(740,160)" filter="url(#hardGlow)" opacity="0.95">
           <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
           <rect id="rightBarFill" x="4" y="128" width="20" height="118" fill="url(#barFill)"/>
           <rect id="rightBarHot" class="svg-btn" x="-10" y="-8" width="48" height="266" fill="transparent"/>
           <g fill="#ffd77d" font-size="12" font-family="monospace" text-anchor="end">
-            <text x="-14" y="16">4.5</text>
-            <text x="-14" y="52">3.8</text>
-            <text x="-14" y="88">3.2</text>
-            <text x="-14" y="124">2.5</text>
-            <text x="-14" y="160">1.8</text>
-            <text x="-14" y="196">1.2</text>
-            <text x="-14" y="232">0.5</text>
+            <text x="-14" y="16">6.0</text>
+            <text x="-14" y="52">5.0</text>
+            <text x="-14" y="88">4.0</text>
+            <text x="-14" y="124">3.0</text>
+            <text x="-14" y="160">2.0</text>
+            <text x="-14" y="196">1.0</text>
+            <text x="-14" y="232">0.0</text>
           </g>
-          <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.5">KEY SEC</text>
+          <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.3">SPAM SEC</text>
+        </g>
+
+        <g transform="translate(690,160)" filter="url(#hardGlow)" opacity="0.9">
+          <rect x="0" y="0" width="20" height="250" fill="none" stroke="#ffd77d" stroke-width="2.4"/>
+          <rect id="countBarFill" x="3" y="128" width="14" height="118" fill="url(#barFill)"/>
+          <rect id="countBarHot" class="svg-btn" x="-10" y="-8" width="40" height="266" fill="transparent"/>
+          <g fill="#ffd77d" font-size="10" font-family="monospace" text-anchor="end">
+            <text x="-8" y="16">20</text>
+            <text x="-8" y="52">16</text>
+            <text x="-8" y="88">12</text>
+            <text x="-8" y="124">8</text>
+            <text x="-8" y="160">6</text>
+            <text x="-8" y="196">4</text>
+            <text x="-8" y="232">1</text>
+          </g>
+          <text x="10" y="-34" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">HITS</text>
         </g>
 
         <g transform="translate(252,160)" filter="url(#hardGlow)" opacity="0.9">
@@ -302,6 +366,9 @@
       </svg>
       <aside class="notice-box" aria-label="System notices">
         <div class="notice-title">Notices</div>
+        <div class="log-tools">
+          <button id="pickLogBtn" class="log-pick inactive">Select Game.log</button>
+        </div>
         <div id="noticeList" class="notice-list">
           <div class="notice-item">System initialized</div>
         </div>
@@ -319,13 +386,16 @@
       movesBeforeReturn: 16,
       smoothSteps: 12,
       moveDuration: 0.18,
-      keyInterval: 2.5,
+      missionSpamDuration: 3.0,
+      missionSpamCount: 5,
+      logPath: '',
+      logExists: false,
     };
 
     const MOUSE_MIN_SEC = 0.6;
     const MOUSE_MAX_SEC = 9.0;
     const KEY_MIN_SEC = 0.5;
-    const KEY_MAX_SEC = 4.5;
+    const KEY_MAX_SEC = 6.0;
     const DIST_MIN = 0;
     const DIST_MAX = 255;
     const MOVES_MIN = 4;
@@ -334,6 +404,8 @@
     const DURATION_MAX = 0.5;
     const SMOOTH_MIN = 4;
     const SMOOTH_MAX = 20;
+    const SPAM_COUNT_MIN = 1;
+    const SPAM_COUNT_MAX = 20;
 
     const els = {
       svgMouseInterval: document.getElementById('svgMouseInterval'),
@@ -341,9 +413,11 @@
       telemetryMouseSec: document.getElementById('telemetryMouseSec'),
       telemetryKeySec: document.getElementById('telemetryKeySec'),
       telemetryMaxPx: document.getElementById('telemetryMaxPx'),
+      telemetryMission: document.getElementById('telemetryMission'),
       telemetryMoves: document.getElementById('telemetryMoves'),
       telemetrySmooth: document.getElementById('telemetrySmooth'),
       telemetryMoveDur: document.getElementById('telemetryMoveDur'),
+      telemetrySpamCount: document.getElementById('telemetrySpamCount'),
       mouseStatusStrip: document.getElementById('mouseStatusStrip'),
       keyStatusStrip: document.getElementById('keyStatusStrip'),
       noticeList: document.getElementById('noticeList'),
@@ -357,12 +431,15 @@
       smoothBarHot: document.getElementById('smoothBarHot'),
       durationBarFill: document.getElementById('durationBarFill'),
       durationBarHot: document.getElementById('durationBarHot'),
+      countBarFill: document.getElementById('countBarFill'),
+      countBarHot: document.getElementById('countBarHot'),
       f11BtnOuter: document.getElementById('f11BtnOuter'),
       f11BtnInner: document.getElementById('f11BtnInner'),
       f12BtnOuter: document.getElementById('f12BtnOuter'),
       f12BtnInner: document.getElementById('f12BtnInner'),
       f11BtnGroup: document.getElementById('f11BtnGroup'),
       f12BtnGroup: document.getElementById('f12BtnGroup'),
+      pickLogBtn: document.getElementById('pickLogBtn'),
     };
 
     const prevState = {
@@ -372,7 +449,15 @@
       smoothSteps: state.smoothSteps,
       movesBeforeReturn: state.movesBeforeReturn,
       moveDuration: state.moveDuration,
-      keyInterval: state.keyInterval,
+      missionSpamDuration: state.missionSpamDuration,
+      missionSpamCount: state.missionSpamCount,
+      missionDetectCount: 0,
+      totalBracketPresses: 0,
+      lastSpamPressCount: 0,
+      lastSpamDuration: 0,
+      lastMissionDetectTs: 0,
+      logPath: state.logPath,
+      logExists: state.logExists,
     };
 
     function buttonColors(isOn) {
@@ -431,8 +516,45 @@
         state.moveDuration = Math.max(0, newState.moveDuration);
       }
       if (typeof newState.keyInterval === 'number') {
-        state.keyInterval = clamp(newState.keyInterval, KEY_MIN_SEC, KEY_MAX_SEC);
+        state.missionSpamDuration = clamp(newState.keyInterval, 0, KEY_MAX_SEC);
       }
+      if (typeof newState.missionSpamDuration === 'number') {
+        state.missionSpamDuration = clamp(newState.missionSpamDuration, 0, KEY_MAX_SEC);
+      }
+      if (typeof newState.missionSpamCount === 'number') {
+        state.missionSpamCount = clamp(Math.round(newState.missionSpamCount), SPAM_COUNT_MIN, SPAM_COUNT_MAX);
+      }
+      if (typeof newState.missionDetectCount === 'number') {
+        state.missionDetectCount = Math.max(0, Math.round(newState.missionDetectCount));
+      }
+      if (typeof newState.totalBracketPresses === 'number') {
+        state.totalBracketPresses = Math.max(0, Math.round(newState.totalBracketPresses));
+      }
+      if (typeof newState.lastSpamPressCount === 'number') {
+        state.lastSpamPressCount = Math.max(0, Math.round(newState.lastSpamPressCount));
+      }
+      if (typeof newState.lastSpamDuration === 'number') {
+        state.lastSpamDuration = Math.max(0, newState.lastSpamDuration);
+      }
+      if (typeof newState.lastMissionDetectTs === 'number') {
+        state.lastMissionDetectTs = Math.max(0, newState.lastMissionDetectTs);
+      }
+      if (typeof newState.logPath === 'string') {
+        state.logPath = newState.logPath;
+      }
+      if (typeof newState.logExists === 'boolean') {
+        state.logExists = newState.logExists;
+      }
+    }
+
+    function summarizePath(path) {
+      if (!path) {
+        return 'No log file selected';
+      }
+      if (path.length <= 58) {
+        return path;
+      }
+      return `${path.slice(0, 18)}...${path.slice(-34)}`;
     }
 
     function updateBars() {
@@ -441,10 +563,15 @@
       els.leftBarFill.setAttribute('height', leftHeight);
       els.leftBarFill.setAttribute('y', 246 - leftHeight);
 
-      const rightPct = clamp((state.keyInterval - KEY_MIN_SEC) / (KEY_MAX_SEC - KEY_MIN_SEC), 0.05, 1);
+      const rightPct = clamp((state.missionSpamDuration - 0) / (KEY_MAX_SEC - 0), 0.05, 1);
       const rightHeight = Math.round(236 * rightPct);
       els.rightBarFill.setAttribute('height', rightHeight);
       els.rightBarFill.setAttribute('y', 246 - rightHeight);
+
+      const countPct = clamp((state.missionSpamCount - SPAM_COUNT_MIN) / (SPAM_COUNT_MAX - SPAM_COUNT_MIN), 0.05, 1);
+      const countHeight = Math.round(236 * countPct);
+      els.countBarFill.setAttribute('height', countHeight);
+      els.countBarFill.setAttribute('y', 246 - countHeight);
 
       const movesPct = clamp((state.movesBeforeReturn - MOVES_MIN) / (MOVES_MAX - MOVES_MIN), 0.05, 1);
       const movesHeight = Math.round(236 * movesPct);
@@ -479,17 +606,26 @@
     }
 
     function render() {
+      const trackingActive = Boolean(state.logPath) && state.logExists && state.keyOn;
+
       els.svgMouseInterval.textContent = `${state.intervalSec.toFixed(2)} s`;
-      els.svgKeyInterval.textContent = `${state.keyInterval.toFixed(2)} s`;
+      els.svgKeyInterval.textContent = `${state.missionSpamDuration.toFixed(2)} s`;
       els.mouseStatusStrip.textContent = state.mouseOn ? `MOUSE ON ${state.intervalSec.toFixed(2)}s` : `MOUSE OFF ${state.intervalSec.toFixed(2)}s`;
-      els.keyStatusStrip.textContent = state.keyOn ? `KEY ON ${state.keyInterval.toFixed(2)}s` : `KEY OFF ${state.keyInterval.toFixed(2)}s`;
+      els.keyStatusStrip.textContent = state.keyOn
+        ? `LOG WATCH ON ${state.missionSpamDuration.toFixed(2)}s x${state.missionSpamCount}`
+        : `LOG WATCH OFF`;
+      els.pickLogBtn.classList.toggle('active', trackingActive);
+      els.pickLogBtn.classList.toggle('inactive', !trackingActive);
+      els.pickLogBtn.textContent = trackingActive ? 'Tracking Game.log' : 'Select Game.log';
 
       els.telemetryMouseSec.textContent = `Mouse Sec: ${state.intervalSec.toFixed(2)}`;
-      els.telemetryKeySec.textContent = `Key Sec: ${state.keyInterval.toFixed(2)}`;
+      els.telemetryKeySec.textContent = `Spam Sec: ${state.missionSpamDuration.toFixed(2)}`;
       els.telemetryMaxPx.textContent = `Max Px: ${state.maxPixels}`;
+      els.telemetryMission.textContent = `Missions: ${state.missionDetectCount}`;
       els.telemetryMoves.textContent = `Moves: ${state.movesBeforeReturn}`;
       els.telemetrySmooth.textContent = `Smooth: ${state.smoothSteps}`;
       els.telemetryMoveDur.textContent = `Move Sec: ${state.moveDuration.toFixed(2)}`;
+      els.telemetrySpamCount.textContent = `[ Total: ${state.totalBracketPresses}`;
 
       applyButtonState(els.f11BtnOuter, els.f11BtnInner, state.keyOn);
       applyButtonState(els.f12BtnOuter, els.f12BtnInner, state.mouseOn);
@@ -500,7 +636,7 @@
         addNotice(state.mouseOn ? 'F12: Mouse drift enabled' : 'F12: Mouse drift disabled', !state.mouseOn);
       }
       if (state.keyOn !== prevState.keyOn) {
-        addNotice(state.keyOn ? 'F11: Key loop enabled' : 'F11: Key loop disabled', !state.keyOn);
+        addNotice(state.keyOn ? 'F11: Mission log watch enabled' : 'F11: Mission log watch disabled', !state.keyOn);
       }
       if (Math.abs(state.maxPixels - prevState.maxPixels) >= 1) {
         addNotice(`Distance set to ${state.maxPixels}px`);
@@ -514,8 +650,22 @@
       if (Math.abs(state.moveDuration - prevState.moveDuration) >= 0.01) {
         addNotice(`Move sec set to ${state.moveDuration.toFixed(2)}`);
       }
-      if (Math.abs(state.keyInterval - prevState.keyInterval) >= 0.05) {
-        addNotice(`Key sec set to ${state.keyInterval.toFixed(2)}s`);
+      if (Math.abs(state.missionSpamDuration - prevState.missionSpamDuration) >= 0.05) {
+        addNotice(`Mission spam window ${state.missionSpamDuration.toFixed(2)}s`);
+      }
+      if (Math.abs(state.missionSpamCount - prevState.missionSpamCount) >= 1) {
+        addNotice(`Mission spam hits ${state.missionSpamCount}`);
+      }
+      if (state.missionDetectCount > prevState.missionDetectCount) {
+        const used = state.lastSpamPressCount || state.missionSpamCount;
+        const sec = (state.lastSpamDuration || state.missionSpamDuration).toFixed(2);
+        addNotice(`Mission invite detected: [ x${used} over ${sec}s (total ${state.totalBracketPresses})`);
+      }
+      if (state.logPath !== prevState.logPath) {
+        addNotice(`Log file set: ${summarizePath(state.logPath)}`, !state.logExists);
+      }
+      if (state.logExists !== prevState.logExists) {
+        addNotice(state.logExists ? 'Log file reachable' : 'Log file missing/unreadable', !state.logExists);
       }
 
       prevState.mouseOn = state.mouseOn;
@@ -524,7 +674,15 @@
       prevState.smoothSteps = state.smoothSteps;
       prevState.movesBeforeReturn = state.movesBeforeReturn;
       prevState.moveDuration = state.moveDuration;
-      prevState.keyInterval = state.keyInterval;
+      prevState.missionSpamDuration = state.missionSpamDuration;
+      prevState.missionSpamCount = state.missionSpamCount;
+      prevState.missionDetectCount = state.missionDetectCount;
+      prevState.totalBracketPresses = state.totalBracketPresses;
+      prevState.lastSpamPressCount = state.lastSpamPressCount;
+      prevState.lastSpamDuration = state.lastSpamDuration;
+      prevState.lastMissionDetectTs = state.lastMissionDetectTs;
+      prevState.logPath = state.logPath;
+      prevState.logExists = state.logExists;
     }
 
     async function pushSettings() {
@@ -535,7 +693,9 @@
           movesBeforeReturn: state.movesBeforeReturn,
           smoothSteps: state.smoothSteps,
           moveDuration: state.moveDuration,
-          keyInterval: state.keyInterval,
+          keyInterval: state.missionSpamDuration,
+          missionSpamDuration: state.missionSpamDuration,
+          missionSpamCount: state.missionSpamCount,
         });
       }
     }
@@ -552,11 +712,34 @@
 
     async function toggleKey() {
       if (window.pywebview && window.pywebview.api) {
+        if (!state.logPath) {
+          addNotice('Pick a log file before enabling watch mode', true);
+          return;
+        }
         const newState = await window.pywebview.api.toggle_key();
         applyBackendState(newState);
       } else {
         state.keyOn = !state.keyOn;
       }
+      render();
+    }
+
+    async function chooseLogFile() {
+      if (!window.pywebview || !window.pywebview.api) {
+        return;
+      }
+
+      try {
+        const result = await window.pywebview.api.choose_log_file();
+        if (result && result.ok) {
+          const latest = await window.pywebview.api.get_state();
+          applyBackendState(latest);
+          addNotice(`Selected log: ${summarizePath(latest.logPath)}`);
+        }
+      } catch (error) {
+        addNotice('Failed to open file picker', true);
+      }
+
       render();
     }
 
@@ -580,8 +763,16 @@
 
     function setKeySecFromBar(event) {
       const pct = percentFromEvent(event, els.rightBarHot);
-      state.keyInterval = clamp(KEY_MIN_SEC + pct * (KEY_MAX_SEC - KEY_MIN_SEC), KEY_MIN_SEC, KEY_MAX_SEC);
-      state.keyInterval = Math.round(state.keyInterval * 100) / 100;
+      state.missionSpamDuration = clamp(0 + pct * (KEY_MAX_SEC - 0), 0, KEY_MAX_SEC);
+      state.missionSpamDuration = Math.round(state.missionSpamDuration * 100) / 100;
+      render();
+    }
+
+    function setSpamCountFromBar(event) {
+      const pct = percentFromEvent(event, els.countBarHot);
+      state.missionSpamCount = Math.round(
+        clamp(SPAM_COUNT_MIN + pct * (SPAM_COUNT_MAX - SPAM_COUNT_MIN), SPAM_COUNT_MIN, SPAM_COUNT_MAX)
+      );
       render();
     }
 
@@ -655,12 +846,14 @@
 
     els.f12BtnGroup.addEventListener('click', toggleMouse);
     els.f11BtnGroup.addEventListener('click', toggleKey);
+    els.pickLogBtn.addEventListener('click', chooseLogFile);
 
     wireBarDrag(els.leftBarHot, setDistanceFromBar);
     wireBarDrag(els.rightBarHot, setKeySecFromBar);
     wireBarDrag(els.movesBarHot, setMovesFromBar);
     wireBarDrag(els.smoothBarHot, setSmoothFromBar);
     wireBarDrag(els.durationBarHot, setDurationFromBar);
+    wireBarDrag(els.countBarHot, setSpamCountFromBar);
 
     window.addEventListener('pywebviewready', async () => {
       const initial = await window.pywebview.api.get_state();
