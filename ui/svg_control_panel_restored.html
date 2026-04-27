@@ -215,7 +215,7 @@
         <rect x="55" y="55" rx="30" ry="30" width="1060" height="460" fill="url(#scanLines)" opacity="0.5"/>
         <rect x="850" y="92" rx="28" ry="28" width="238" height="396" fill="rgba(255,191,95,0.025)" stroke="rgba(255,191,95,0.10)" stroke-width="1.5"/>
         <text x="85" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">MOUSE DRIFT</text>
-        <text id="svgMouseInterval" x="85" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">4800 ms</text>
+        <text id="svgMouseInterval" x="85" y="132" fill="#ffd893" font-size="28" filter="url(#softGlow)">3000 ms</text>
 
         <text x="640" y="96" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">[ Key Loop</text>
         <text x="640" y="116" fill="#d1a56a" font-size="12" letter-spacing="1.4">MISSION-ONLY AUTO ACCEPT</text>
@@ -226,8 +226,8 @@
           <text x="178" y="497">LIVE VALUES</text>
         </g>
         <g fill="#ffd893" font-size="12" font-family="monospace">
-          <text id="telemetryMouseSec" x="178" y="513">Mouse Sec: 4.80</text>
-          <text id="telemetryKeySec" x="388" y="513">Spam Sec: 3.00</text>
+          <text id="telemetryMouseSec" x="178" y="513">Mouse Sec: 3.00</text>
+          <text id="telemetryKeySec" x="388" y="513">Delay: 3.00</text>
           <text id="telemetryMaxPx" x="598" y="513">Max Px: 96</text>
           <text id="telemetryMission" x="732" y="513">Missions: 0</text>
           <text id="telemetryMoves" x="178" y="528">Moves: 16</text>
@@ -252,36 +252,20 @@
           <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.5">DIST</text>
         </g>
 
-        <g transform="translate(740,160)" filter="url(#hardGlow)" opacity="0.95">
-          <rect x="0" y="0" width="28" height="250" fill="none" stroke="#ffd77d" stroke-width="3"/>
-          <rect id="rightBarFill" x="4" y="128" width="20" height="118" fill="url(#barFill)"/>
-          <rect id="rightBarHot" class="svg-btn" x="-10" y="-8" width="48" height="266" fill="transparent"/>
-          <g fill="#ffd77d" font-size="12" font-family="monospace" text-anchor="end">
-            <text x="-14" y="16">6.0</text>
-            <text x="-14" y="52">5.0</text>
-            <text x="-14" y="88">4.0</text>
-            <text x="-14" y="124">3.0</text>
-            <text x="-14" y="160">2.0</text>
-            <text x="-14" y="196">1.0</text>
-            <text x="-14" y="232">0.0</text>
-          </g>
-          <text x="14" y="286" text-anchor="middle" fill="#ffcc79" font-size="16" font-weight="700" letter-spacing="1.3">SPAM SEC</text>
-        </g>
-
         <g transform="translate(690,160)" filter="url(#hardGlow)" opacity="0.9">
           <rect x="0" y="0" width="20" height="250" fill="none" stroke="#ffd77d" stroke-width="2.4"/>
           <rect id="countBarFill" x="3" y="128" width="14" height="118" fill="url(#barFill)"/>
           <rect id="countBarHot" class="svg-btn" x="-10" y="-8" width="40" height="266" fill="transparent"/>
           <g fill="#ffd77d" font-size="10" font-family="monospace" text-anchor="end">
-            <text x="-8" y="16">20</text>
-            <text x="-8" y="52">16</text>
-            <text x="-8" y="88">12</text>
-            <text x="-8" y="124">8</text>
-            <text x="-8" y="160">6</text>
-            <text x="-8" y="196">4</text>
-            <text x="-8" y="232">1</text>
+            <text x="-8" y="16">3.00</text>
+            <text x="-8" y="52">2.50</text>
+            <text x="-8" y="88">2.00</text>
+            <text x="-8" y="124">1.50</text>
+            <text x="-8" y="160">1.00</text>
+            <text x="-8" y="196">0.50</text>
+            <text x="-8" y="232">0.01</text>
           </g>
-          <text x="10" y="-34" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">HITS</text>
+          <text x="10" y="-34" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">DELAY</text>
         </g>
 
         <g transform="translate(252,160)" filter="url(#hardGlow)" opacity="0.9">
@@ -358,7 +342,7 @@
           <rect id="f12BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
           <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F12</text>
         </g>
-        <g class="svg-btn" id="f11BtnGroup" transform="translate(651,610)" tabindex="0" role="button" aria-label="F11 toggle key spam">
+        <g class="svg-btn" id="f11BtnGroup" transform="translate(651,610)" tabindex="0" role="button" aria-label="F11 toggle auto accept">
             <rect id="f11BtnOuter" x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
             <rect id="f11BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
             <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F11</text>
@@ -381,21 +365,20 @@
     const state = {
       mouseOn: false,
       keyOn: false,
-      intervalSec: 4.8,
+      intervalSec: 3.0,
       maxPixels: 96,
       movesBeforeReturn: 16,
       smoothSteps: 12,
       moveDuration: 0.18,
-      missionSpamDuration: 3.0,
-      missionSpamCount: 5,
+      acceptDelay: 0.5,
+      missionDetectCount: 0,
+      totalBracketPresses: 0,
       logPath: '',
       logExists: false,
     };
 
     const MOUSE_MIN_SEC = 0.6;
     const MOUSE_MAX_SEC = 9.0;
-    const KEY_MIN_SEC = 0.5;
-    const KEY_MAX_SEC = 6.0;
     const DIST_MIN = 0;
     const DIST_MAX = 255;
     const MOVES_MIN = 4;
@@ -404,8 +387,8 @@
     const DURATION_MAX = 0.5;
     const SMOOTH_MIN = 4;
     const SMOOTH_MAX = 20;
-    const SPAM_COUNT_MIN = 1;
-    const SPAM_COUNT_MAX = 20;
+    const DELAY_MIN = 0.01;
+    const DELAY_MAX = 3.0;
 
     const els = {
       svgMouseInterval: document.getElementById('svgMouseInterval'),
@@ -422,9 +405,9 @@
       keyStatusStrip: document.getElementById('keyStatusStrip'),
       noticeList: document.getElementById('noticeList'),
       leftBarFill: document.getElementById('leftBarFill'),
-      rightBarFill: document.getElementById('rightBarFill'),
+      rightBarFill: null,
       leftBarHot: document.getElementById('leftBarHot'),
-      rightBarHot: document.getElementById('rightBarHot'),
+      rightBarHot: null,
       movesBarFill: document.getElementById('movesBarFill'),
       movesBarHot: document.getElementById('movesBarHot'),
       smoothBarFill: document.getElementById('smoothBarFill'),
@@ -449,12 +432,9 @@
       smoothSteps: state.smoothSteps,
       movesBeforeReturn: state.movesBeforeReturn,
       moveDuration: state.moveDuration,
-      missionSpamDuration: state.missionSpamDuration,
-      missionSpamCount: state.missionSpamCount,
+      acceptDelay: state.acceptDelay,
       missionDetectCount: 0,
       totalBracketPresses: 0,
-      lastSpamPressCount: 0,
-      lastSpamDuration: 0,
       lastMissionDetectTs: 0,
       logPath: state.logPath,
       logExists: state.logExists,
@@ -515,26 +495,14 @@
       if (typeof newState.moveDuration === 'number') {
         state.moveDuration = Math.max(0, newState.moveDuration);
       }
-      if (typeof newState.keyInterval === 'number') {
-        state.missionSpamDuration = clamp(newState.keyInterval, 0, KEY_MAX_SEC);
-      }
-      if (typeof newState.missionSpamDuration === 'number') {
-        state.missionSpamDuration = clamp(newState.missionSpamDuration, 0, KEY_MAX_SEC);
-      }
-      if (typeof newState.missionSpamCount === 'number') {
-        state.missionSpamCount = clamp(Math.round(newState.missionSpamCount), SPAM_COUNT_MIN, SPAM_COUNT_MAX);
+      if (typeof newState.acceptDelay === 'number') {
+        state.acceptDelay = clamp(newState.acceptDelay, DELAY_MIN, DELAY_MAX);
       }
       if (typeof newState.missionDetectCount === 'number') {
         state.missionDetectCount = Math.max(0, Math.round(newState.missionDetectCount));
       }
       if (typeof newState.totalBracketPresses === 'number') {
         state.totalBracketPresses = Math.max(0, Math.round(newState.totalBracketPresses));
-      }
-      if (typeof newState.lastSpamPressCount === 'number') {
-        state.lastSpamPressCount = Math.max(0, Math.round(newState.lastSpamPressCount));
-      }
-      if (typeof newState.lastSpamDuration === 'number') {
-        state.lastSpamDuration = Math.max(0, newState.lastSpamDuration);
       }
       if (typeof newState.lastMissionDetectTs === 'number') {
         state.lastMissionDetectTs = Math.max(0, newState.lastMissionDetectTs);
@@ -563,12 +531,7 @@
       els.leftBarFill.setAttribute('height', leftHeight);
       els.leftBarFill.setAttribute('y', 246 - leftHeight);
 
-      const rightPct = clamp((state.missionSpamDuration - 0) / (KEY_MAX_SEC - 0), 0.05, 1);
-      const rightHeight = Math.round(236 * rightPct);
-      els.rightBarFill.setAttribute('height', rightHeight);
-      els.rightBarFill.setAttribute('y', 246 - rightHeight);
-
-      const countPct = clamp((state.missionSpamCount - SPAM_COUNT_MIN) / (SPAM_COUNT_MAX - SPAM_COUNT_MIN), 0.05, 1);
+      const countPct = clamp((state.acceptDelay - DELAY_MIN) / (DELAY_MAX - DELAY_MIN), 0.05, 1);
       const countHeight = Math.round(236 * countPct);
       els.countBarFill.setAttribute('height', countHeight);
       els.countBarFill.setAttribute('y', 246 - countHeight);
@@ -609,17 +572,17 @@
       const trackingActive = Boolean(state.logPath) && state.logExists && state.keyOn;
 
       els.svgMouseInterval.textContent = `${state.intervalSec.toFixed(2)} s`;
-      els.svgKeyInterval.textContent = `${state.missionSpamDuration.toFixed(2)} s`;
+      els.svgKeyInterval.textContent = `${state.acceptDelay.toFixed(2)} s delay`;
       els.mouseStatusStrip.textContent = state.mouseOn ? `MOUSE ON ${state.intervalSec.toFixed(2)}s` : `MOUSE OFF ${state.intervalSec.toFixed(2)}s`;
       els.keyStatusStrip.textContent = state.keyOn
-        ? `LOG WATCH ON ${state.missionSpamDuration.toFixed(2)}s x${state.missionSpamCount}`
+        ? `LOG WATCH ON  delay ${state.acceptDelay.toFixed(2)}s`
         : `LOG WATCH OFF`;
       els.pickLogBtn.classList.toggle('active', trackingActive);
       els.pickLogBtn.classList.toggle('inactive', !trackingActive);
       els.pickLogBtn.textContent = trackingActive ? 'Tracking Game.log' : 'Select Game.log';
 
       els.telemetryMouseSec.textContent = `Mouse Sec: ${state.intervalSec.toFixed(2)}`;
-      els.telemetryKeySec.textContent = `Spam Sec: ${state.missionSpamDuration.toFixed(2)}`;
+      els.telemetryKeySec.textContent = `Delay: ${state.acceptDelay.toFixed(2)}`;
       els.telemetryMaxPx.textContent = `Max Px: ${state.maxPixels}`;
       els.telemetryMission.textContent = `Missions: ${state.missionDetectCount}`;
       els.telemetryMoves.textContent = `Moves: ${state.movesBeforeReturn}`;
@@ -650,16 +613,11 @@
       if (Math.abs(state.moveDuration - prevState.moveDuration) >= 0.01) {
         addNotice(`Move sec set to ${state.moveDuration.toFixed(2)}`);
       }
-      if (Math.abs(state.missionSpamDuration - prevState.missionSpamDuration) >= 0.05) {
-        addNotice(`Mission spam window ${state.missionSpamDuration.toFixed(2)}s`);
-      }
-      if (Math.abs(state.missionSpamCount - prevState.missionSpamCount) >= 1) {
-        addNotice(`Mission spam hits ${state.missionSpamCount}`);
+      if (Math.abs(state.acceptDelay - prevState.acceptDelay) >= 0.01) {
+        addNotice(`Key delay set to ${state.acceptDelay.toFixed(2)}s`);
       }
       if (state.missionDetectCount > prevState.missionDetectCount) {
-        const used = state.lastSpamPressCount || state.missionSpamCount;
-        const sec = (state.lastSpamDuration || state.missionSpamDuration).toFixed(2);
-        addNotice(`Mission invite detected: [ x${used} over ${sec}s (total ${state.totalBracketPresses})`);
+        addNotice(`Contract shared detected: [ sent after ${state.acceptDelay.toFixed(2)}s delay (total ${state.totalBracketPresses})`);
       }
       if (state.logPath !== prevState.logPath) {
         addNotice(`Log file set: ${summarizePath(state.logPath)}`, !state.logExists);
@@ -674,12 +632,9 @@
       prevState.smoothSteps = state.smoothSteps;
       prevState.movesBeforeReturn = state.movesBeforeReturn;
       prevState.moveDuration = state.moveDuration;
-      prevState.missionSpamDuration = state.missionSpamDuration;
-      prevState.missionSpamCount = state.missionSpamCount;
+      prevState.acceptDelay = state.acceptDelay;
       prevState.missionDetectCount = state.missionDetectCount;
       prevState.totalBracketPresses = state.totalBracketPresses;
-      prevState.lastSpamPressCount = state.lastSpamPressCount;
-      prevState.lastSpamDuration = state.lastSpamDuration;
       prevState.lastMissionDetectTs = state.lastMissionDetectTs;
       prevState.logPath = state.logPath;
       prevState.logExists = state.logExists;
@@ -693,9 +648,7 @@
           movesBeforeReturn: state.movesBeforeReturn,
           smoothSteps: state.smoothSteps,
           moveDuration: state.moveDuration,
-          keyInterval: state.missionSpamDuration,
-          missionSpamDuration: state.missionSpamDuration,
-          missionSpamCount: state.missionSpamCount,
+          acceptDelay: state.acceptDelay,
         });
       }
     }
@@ -761,18 +714,9 @@
       render();
     }
 
-    function setKeySecFromBar(event) {
-      const pct = percentFromEvent(event, els.rightBarHot);
-      state.missionSpamDuration = clamp(0 + pct * (KEY_MAX_SEC - 0), 0, KEY_MAX_SEC);
-      state.missionSpamDuration = Math.round(state.missionSpamDuration * 100) / 100;
-      render();
-    }
-
-    function setSpamCountFromBar(event) {
+    function setDelayFromBar(event) {
       const pct = percentFromEvent(event, els.countBarHot);
-      state.missionSpamCount = Math.round(
-        clamp(SPAM_COUNT_MIN + pct * (SPAM_COUNT_MAX - SPAM_COUNT_MIN), SPAM_COUNT_MIN, SPAM_COUNT_MAX)
-      );
+      state.acceptDelay = Math.round(clamp(DELAY_MIN + pct * (DELAY_MAX - DELAY_MIN), DELAY_MIN, DELAY_MAX) * 100) / 100;
       render();
     }
 
@@ -849,11 +793,10 @@
     els.pickLogBtn.addEventListener('click', chooseLogFile);
 
     wireBarDrag(els.leftBarHot, setDistanceFromBar);
-    wireBarDrag(els.rightBarHot, setKeySecFromBar);
     wireBarDrag(els.movesBarHot, setMovesFromBar);
     wireBarDrag(els.smoothBarHot, setSmoothFromBar);
     wireBarDrag(els.durationBarHot, setDurationFromBar);
-    wireBarDrag(els.countBarHot, setSpamCountFromBar);
+    wireBarDrag(els.countBarHot, setDelayFromBar);
 
     window.addEventListener('pywebviewready', async () => {
       const initial = await window.pywebview.api.get_state();

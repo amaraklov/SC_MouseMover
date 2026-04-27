@@ -1,3 +1,4 @@
+import ctypes
 import json
 import math
 import random
@@ -5,7 +6,98 @@ import re
 import sys
 import threading
 import time
+from ctypes import wintypes
 from pathlib import Path
+
+# ---------- SendInput helpers — works with DirectInput / Raw Input games ----------
+
+class _MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx",          wintypes.LONG),
+        ("dy",          wintypes.LONG),
+        ("mouseData",   wintypes.DWORD),
+        ("dwFlags",     wintypes.DWORD),
+        ("time",        wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+
+
+class _KEYBDINPUT(ctypes.Structure):
+    _fields_ = [
+        ("wVk",         wintypes.WORD),
+        ("wScan",       wintypes.WORD),
+        ("dwFlags",     wintypes.DWORD),
+        ("time",        wintypes.DWORD),
+        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+
+
+class _INPUT_UNION(ctypes.Union):
+    _fields_ = [("mi", _MOUSEINPUT), ("ki", _KEYBDINPUT)]
+
+
+class _INPUT(ctypes.Structure):
+    _fields_ = [("type", wintypes.DWORD), ("_u", _INPUT_UNION)]
+
+
+_INPUT_MOUSE    = 0
+_INPUT_KEYBOARD = 1
+_MOUSEEVENTF_MOVE     = 0x0001
+_KEYEVENTF_SCANCODE   = 0x0008
+_KEYEVENTF_KEYUP      = 0x0002
+
+# Scan codes for keys Star Citizen commonly binds to accept actions
+_SCAN_CODES: dict[str, int] = {
+    "1": 0x02, "2": 0x03, "3": 0x04, "4": 0x05,
+    "5": 0x06, "6": 0x07, "7": 0x08, "8": 0x09,
+    "9": 0x0A, "0": 0x0B,
+    "[": 0x1A, "]": 0x1B,
+    "-": 0x0C, "=": 0x0D,
+}
+
+
+def _get_scan_code(char: str) -> int:
+    sc = _SCAN_CODES.get(char)
+    if sc is not None:
+        return sc
+    vk = ctypes.windll.user32.VkKeyScanA(ctypes.c_char(char.encode()))
+    return ctypes.windll.user32.MapVirtualKeyW(vk & 0xFF, 0)
+
+
+def _send_mouse_move(dx: int, dy: int) -> None:
+    """Send a relative mouse movement via SendInput (picked up by Raw Input games)."""
+    inp = _INPUT()
+    inp.type = _INPUT_MOUSE
+    inp._u.mi.dx = dx
+    inp._u.mi.dy = dy
+    inp._u.mi.mouseData = 0
+    inp._u.mi.dwFlags = _MOUSEEVENTF_MOVE
+    inp._u.mi.time = 0
+    inp._u.mi.dwExtraInfo = None
+    ctypes.windll.user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(inp))
+
+
+def _send_key_scancode(char: str) -> None:
+    """Press and release a key by scan code via SendInput (works in DirectInput games)."""
+    sc = _get_scan_code(char)
+    down = _INPUT()
+    down.type = _INPUT_KEYBOARD
+    down._u.ki.wVk = 0
+    down._u.ki.wScan = sc
+    down._u.ki.dwFlags = _KEYEVENTF_SCANCODE
+    down._u.ki.time = 0
+    down._u.ki.dwExtraInfo = None
+
+    up = _INPUT()
+    up.type = _INPUT_KEYBOARD
+    up._u.ki.wVk = 0
+    up._u.ki.wScan = sc
+    up._u.ki.dwFlags = _KEYEVENTF_SCANCODE | _KEYEVENTF_KEYUP
+    up._u.ki.time = 0
+    up._u.ki.dwExtraInfo = None
+
+    arr = (_INPUT * 2)(down, up)
+    ctypes.windll.user32.SendInput(2, arr, ctypes.sizeof(_INPUT))
 
 import webview
 from pynput.keyboard import Controller as KeyboardController
@@ -184,10 +276,10 @@ EMBEDDED_HTML = r"""
                 <rect x="58" y="58" rx="26" ry="26" width="896" height="480" fill="rgba(255,191,95,0.04)" stroke="rgba(255,191,95,0.14)"/>
 
                 <text x="86" y="98" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">MOUSE DRIFT</text>
-                <text id="svgMouseInterval" x="86" y="132" fill="#ffd893" font-size="27" filter="url(#softGlow)">4800 ms</text>
+                <text id="svgMouseInterval" x="86" y="132" fill="#ffd893" font-size="27" filter="url(#softGlow)">3000 ms</text>
 
-                <text x="706" y="98" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">KEY LOOP</text>
-                <text id="svgKeyInterval" x="706" y="132" fill="#ffd893" font-size="27" filter="url(#softGlow)">2.50 s</text>
+                <text x="706" y="98" fill="#ffcc79" font-size="34" font-weight="700" letter-spacing="3" filter="url(#softGlow)">AUTO ACCEPT</text>
+                <text id="svgKeyInterval" x="706" y="132" fill="#ffd893" font-size="27" filter="url(#softGlow)">3.00 s delay</text>
 
                 <rect id="statusStrip" x="158" y="548" width="700" height="46" rx="4" fill="#ffe57a" filter="url(#softGlow)"/>
                 <text x="508" y="578" text-anchor="middle" fill="#9b611d" font-size="32" letter-spacing="7">SELF STATUS</text>
@@ -225,14 +317,14 @@ EMBEDDED_HTML = r"""
             </div>
 
             <div class="card">
-                <div class="label">Key Spam</div>
+                <div class="label">Auto Accept</div>
                 <div class="value" id="keyStateLabel">OFF</div>
             </div>
 
             <div class="card fields">
                 <label class="field">
                     <span>Interval ms</span>
-                    <input id="intervalInput" type="number" min="1" step="1" value="4800" />
+                    <input id="intervalInput" type="number" min="1" step="1" value="3000" />
                 </label>
                 <label class="field">
                     <span>Max Pixels</span>
@@ -251,8 +343,8 @@ EMBEDDED_HTML = r"""
                     <input id="durationInput" type="number" min="0" step="0.01" value="0.18" />
                 </label>
                 <label class="field">
-                    <span>Key Interval</span>
-                    <input id="keyIntervalInput" type="number" min="0.1" step="0.1" value="2.5" />
+                    <span>Key Delay s</span>
+                    <input id="acceptDelayInput" type="number" min="0" step="0.5" value="3" />
                 </label>
             </div>
 
@@ -262,8 +354,8 @@ EMBEDDED_HTML = r"""
                     <span>Global hotkey, no focus required</span>
                 </button>
                 <button id="toggleKeyBtn" class="mini-button">
-                    <strong>F11 Toggle Key Spam - OFF</strong>
-                    <span>Sends [ at configured interval</span>
+                    <strong>F11 Toggle Auto Accept - OFF</strong>
+                    <span>Sends [ after delay when contract shared</span>
                 </button>
             </div>
         </aside>
@@ -273,12 +365,12 @@ EMBEDDED_HTML = r"""
         const state = {
             mouseOn: false,
             keyOn: false,
-            intervalMs: 4800,
+            intervalMs: 3000,
             maxPixels: 96,
             movesBeforeReturn: 16,
             smoothSteps: 12,
             moveDuration: 0.18,
-            keyInterval: 2.5,
+            acceptDelay: 3.0,
         };
 
         const els = {
@@ -287,7 +379,7 @@ EMBEDDED_HTML = r"""
             movesInput: document.getElementById("movesInput"),
             smoothInput: document.getElementById("smoothInput"),
             durationInput: document.getElementById("durationInput"),
-            keyIntervalInput: document.getElementById("keyIntervalInput"),
+            acceptDelayInput: document.getElementById("acceptDelayInput"),
             mouseStateLabel: document.getElementById("mouseStateLabel"),
             keyStateLabel: document.getElementById("keyStateLabel"),
             svgMouseInterval: document.getElementById("svgMouseInterval"),
@@ -328,12 +420,13 @@ EMBEDDED_HTML = r"""
             els.movesInput.value = state.movesBeforeReturn;
             els.smoothInput.value = state.smoothSteps;
             els.durationInput.value = state.moveDuration;
-            els.keyIntervalInput.value = state.keyInterval;
+            if (els.acceptDelayInput) els.acceptDelayInput.value = state.acceptDelay ?? 3.0;
+            els.svgKeyInterval.textContent = `${(state.acceptDelay ?? 3.0).toFixed(2)} s delay`;
 
             els.mouseStateLabel.textContent = state.mouseOn ? "ON" : "OFF";
-            els.keyStateLabel.textContent = state.keyOn ? `${state.keyInterval.toFixed(2)}s / [` : "OFF";
+            els.keyStateLabel.textContent = state.keyOn ? `delay ${(state.acceptDelay ?? 3.0).toFixed(2)}s` : "OFF";
             els.svgMouseInterval.textContent = `${state.intervalMs} ms`;
-            els.svgKeyInterval.textContent = `${state.keyInterval.toFixed(2)} s`;
+
             els.statusStrip.setAttribute("fill", state.mouseOn || state.keyOn ? "#ffd183" : "#ffe57a");
 
             applyButtonState(els.mouseBtnOuter, els.mouseBtnInner, state.mouseOn);
@@ -344,17 +437,17 @@ EMBEDDED_HTML = r"""
             els.toggleMouseBtn.querySelector("strong").textContent =
                 state.mouseOn ? "F12 Toggle Mouse - ON" : "F12 Toggle Mouse - OFF";
             els.toggleKeyBtn.querySelector("strong").textContent =
-                state.keyOn ? "F11 Toggle Key Spam - ON" : "F11 Toggle Key Spam - OFF";
+                state.keyOn ? "F11 Toggle Auto Accept - ON" : "F11 Toggle Auto Accept - OFF";
         }
 
         function collectSettings() {
             return {
-                intervalMs: parseInt(els.intervalInput.value || "4800", 10),
+                intervalMs: parseInt(els.intervalInput.value || "3000", 10),
                 maxPixels: parseInt(els.maxPixelsInput.value || "96", 10),
                 movesBeforeReturn: parseInt(els.movesInput.value || "16", 10),
                 smoothSteps: parseInt(els.smoothInput.value || "12", 10),
                 moveDuration: parseFloat(els.durationInput.value || "0.18"),
-                keyInterval: parseFloat(els.keyIntervalInput.value || "2.5"),
+                acceptDelay: parseFloat(els.acceptDelayInput?.value || "3.0"),
             };
         }
 
@@ -397,8 +490,8 @@ EMBEDDED_HTML = r"""
             els.movesInput,
             els.smoothInput,
             els.durationInput,
-            els.keyIntervalInput,
-        ].forEach((input) => input.addEventListener("change", pushSettings));
+            els.acceptDelayInput,
+        ].forEach((input) => input && input.addEventListener("change", pushSettings));
 
         els.toggleMouseBtn.addEventListener("click", toggleMouse);
         els.toggleKeyBtn.addEventListener("click", toggleKey);
@@ -439,26 +532,27 @@ class MouseDriftEngine:
         self.window = None
         self.lock = threading.Lock()
 
-        self.interval_ms = 4800
+        self.interval_ms = 3000
         self.max_pixels = 96
         self.moves_before_return = 16
         self.smooth_steps = 12
         self.move_duration = 0.18
-        self.key_interval = 2.5
-        self.mission_spam_duration = 3.0
-        self.mission_spam_count = 5
+        self.accept_delay = 0.5
         self.mission_detect_count = 0
         self.total_bracket_presses = 0
-        self.last_spam_press_count = 0
-        self.last_spam_duration_used = 0.0
         self.last_mission_detect_ts = 0.0
 
-        self.log_path = r"C:\Program Files\Roberts Space Industries\StarCitizen\HOTFIX\Game.log"
+        self.log_path = self.find_default_log_path()
         self.log_offset = 0
         self.last_accept_ts = 0.0
 
         self.origin = None
         self.move_count = 0
+
+    def find_default_log_path(self):
+        install_root = Path(r"C:\Program Files\Roberts Space Industries\StarCitizen")
+        # Default to LIVE; users can still override from the UI/API.
+        return str(install_root / "LIVE" / "Game.log")
 
     def attach_window(self, window):
         self.window = window
@@ -475,13 +569,9 @@ class MouseDriftEngine:
             "movesBeforeReturn": self.moves_before_return,
             "smoothSteps": self.smooth_steps,
             "moveDuration": self.move_duration,
-            "keyInterval": self.key_interval,
-            "missionSpamDuration": self.mission_spam_duration,
-            "missionSpamCount": self.mission_spam_count,
+            "acceptDelay": self.accept_delay,
             "missionDetectCount": self.mission_detect_count,
             "totalBracketPresses": self.total_bracket_presses,
-            "lastSpamPressCount": self.last_spam_press_count,
-            "lastSpamDuration": self.last_spam_duration_used,
             "lastMissionDetectTs": self.last_mission_detect_ts,
             "logPath": self.log_path,
             "logExists": Path(self.log_path).is_file(),
@@ -539,13 +629,7 @@ class MouseDriftEngine:
             )
             self.smooth_steps = max(1, int(settings.get("smoothSteps", self.smooth_steps)))
             self.move_duration = max(0.0, float(settings.get("moveDuration", self.move_duration)))
-            self.key_interval = max(0.1, float(settings.get("keyInterval", self.key_interval)))
-            self.mission_spam_duration = max(
-                0.0, min(6.0, float(settings.get("missionSpamDuration", self.mission_spam_duration)))
-            )
-            self.mission_spam_count = max(
-                1, int(settings.get("missionSpamCount", self.mission_spam_count))
-            )
+            self.accept_delay = max(0.0, float(settings.get("acceptDelay", self.accept_delay)))
 
         self.emit_state()
         return {"ok": True}
@@ -559,13 +643,9 @@ class MouseDriftEngine:
             "movesBeforeReturn": self.moves_before_return,
             "smoothSteps": self.smooth_steps,
             "moveDuration": self.move_duration,
-            "keyInterval": self.key_interval,
-            "missionSpamDuration": self.mission_spam_duration,
-            "missionSpamCount": self.mission_spam_count,
+            "acceptDelay": self.accept_delay,
             "missionDetectCount": self.mission_detect_count,
             "totalBracketPresses": self.total_bracket_presses,
-            "lastSpamPressCount": self.last_spam_press_count,
-            "lastSpamDuration": self.last_spam_duration_used,
             "lastMissionDetectTs": self.last_mission_detect_ts,
             "logPath": self.log_path,
             "logExists": Path(self.log_path).is_file(),
@@ -614,16 +694,17 @@ class MouseDriftEngine:
             self.log_offset = 0
 
     def is_mission_invite_line(self, line):
-        lowered = line.lower()
-        if "invite" not in lowered:
-            return False
+        # Must contain MissionId (case-insensitive) and exact phrase "Contract Shared:"
+        return "missionid" in line.lower() and "Contract Shared:" in line
 
-        # Mission invite only: all other invite categories are ignored.
-        return bool(re.search(r"\bmission\b", lowered))
+    def extract_accept_key(self, line):
+        return "["
+
+    def press_accept_key(self, key_text):
+        _send_key_scancode(key_text if key_text else "[")
 
     def process_new_log_data(self, blob):
         now = time.time()
-        cooldown = max(0.5, self.mission_spam_duration)
 
         for raw_line in blob.splitlines():
             line = raw_line.decode("utf-8", errors="ignore").strip()
@@ -632,51 +713,28 @@ class MouseDriftEngine:
             if not self.is_mission_invite_line(line):
                 continue
 
-            if now - self.last_accept_ts < cooldown:
+            if now - self.last_accept_ts < self.accept_delay:
                 continue
 
-            sent = self.spam_accept_window()
-            if sent > 0:
-                self.mission_detect_count += 1
-                self.last_mission_detect_ts = now
-            self.last_accept_ts = now
-            self.emit_state()
-            break
+            print(f"[ACCEPT] Mission detected. Waiting {self.accept_delay}s then sending [")
+            print(f"         Line: {line[:120]}")
 
-    def spam_accept_window(self):
-        press_count = max(1, self.mission_spam_count)
-        duration = max(0.0, self.mission_spam_duration)
-        sent = 0
+            if self.accept_delay > 0:
+                self.key_stop_event.wait(self.accept_delay)
 
-        if press_count == 1:
-            self.keyboard.press("[")
-            self.keyboard.release("[")
-            sent = 1
-            self.total_bracket_presses += sent
-            self.last_spam_press_count = sent
-            self.last_spam_duration_used = 0.0
-            return sent
-
-        spacing = duration / (press_count - 1) if duration > 0 else 0.0
-
-        for index in range(press_count):
             if self.key_stop_event.is_set():
                 break
 
-            self.keyboard.press("[")
-            self.keyboard.release("[")
-            sent += 1
+            _send_key_scancode("[")
+            self.total_bracket_presses += 1
+            self.mission_detect_count += 1
+            self.last_mission_detect_ts = time.time()
+            self.last_accept_ts = time.time()
+            print("[ACCEPT] [ sent.")
+            self.emit_state()
+            break
 
-            if index == press_count - 1:
-                continue
 
-            if spacing > 0 and self.key_stop_event.wait(spacing):
-                break
-
-        self.total_bracket_presses += sent
-        self.last_spam_press_count = sent
-        self.last_spam_duration_used = duration
-        return sent
 
     def toggle_mouse(self):
         if self.mouse_running:
@@ -750,17 +808,16 @@ class MouseDriftEngine:
         return 0.5 - 0.5 * math.cos(math.pi * t)
 
     def smooth_move_relative(self, dx, dy, duration, steps):
-        start_x, start_y = self.mouse.position
-        prev_x, prev_y = start_x, start_y
-
         if dx == 0 and dy == 0:
             return
 
         if steps <= 1 or duration <= 0:
-            self.mouse.position = (start_x + dx, start_y + dy)
+            _send_mouse_move(dx, dy)
             return
 
         sleep_time = duration / steps
+        prev_eased_x = 0.0
+        prev_eased_y = 0.0
 
         for i in range(1, steps + 1):
             if self.mouse_stop_event.is_set():
@@ -769,12 +826,16 @@ class MouseDriftEngine:
             t = i / steps
             eased = self.ease_in_out(t)
 
-            target_x = round(start_x + dx * eased)
-            target_y = round(start_y + dy * eased)
+            cur_eased_x = dx * eased
+            cur_eased_y = dy * eased
+            step_dx = round(cur_eased_x) - round(prev_eased_x)
+            step_dy = round(cur_eased_y) - round(prev_eased_y)
 
-            if (target_x, target_y) != (prev_x, prev_y):
-                self.mouse.position = (target_x, target_y)
-                prev_x, prev_y = target_x, target_y
+            if step_dx != 0 or step_dy != 0:
+                _send_mouse_move(step_dx, step_dy)
+
+            prev_eased_x = cur_eased_x
+            prev_eased_y = cur_eased_y
 
             time.sleep(sleep_time)
 
