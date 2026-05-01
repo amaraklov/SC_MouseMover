@@ -538,6 +538,7 @@ class MouseDriftEngine:
         self.smooth_steps = 12
         self.move_duration = 0.18
         self.accept_delay = 0.5
+        self.accept_timeout_sec = 60.0
         self.mission_detect_count = 0
         self.total_bracket_presses = 0
         self.last_mission_detect_ts = 0.0
@@ -545,6 +546,9 @@ class MouseDriftEngine:
         self.log_path = self.find_default_log_path()
         self.log_offset = 0
         self.last_accept_ts = 0.0
+        self.accept_spam_active = False
+        self.accept_spam_deadline_ts = 0.0
+        self.next_accept_press_ts = 0.0
 
         self.origin = None
         self.move_count = 0
@@ -629,7 +633,7 @@ class MouseDriftEngine:
             )
             self.smooth_steps = max(1, int(settings.get("smoothSteps", self.smooth_steps)))
             self.move_duration = max(0.0, float(settings.get("moveDuration", self.move_duration)))
-            self.accept_delay = max(0.0, float(settings.get("acceptDelay", self.accept_delay)))
+            self.accept_delay = max(0.01, float(settings.get("acceptDelay", self.accept_delay)))
 
         self.emit_state()
         return {"ok": True}
@@ -697,6 +701,9 @@ class MouseDriftEngine:
         # Must contain MissionId (case-insensitive) and exact phrase "Contract Shared:"
         return "missionid" in line.lower() and "Contract Shared:" in line
 
+    def is_contract_accepted_line(self, line):
+        return "Contract Accepted:" in line
+
     def extract_accept_key(self, line):
         return "["
 
@@ -710,29 +717,49 @@ class MouseDriftEngine:
             line = raw_line.decode("utf-8", errors="ignore").strip()
             if not line:
                 continue
+
+            if self.is_contract_accepted_line(line):
+                if self.accept_spam_active:
+                    self.accept_spam_active = False
+                    print("[ACCEPT] Contract Accepted detected. Stopping spam.")
+                    self.emit_state()
+                continue
+
             if not self.is_mission_invite_line(line):
                 continue
 
-            if now - self.last_accept_ts < self.accept_delay:
-                continue
-
-            print(f"[ACCEPT] Mission detected. Waiting {self.accept_delay}s then sending [")
-            print(f"         Line: {line[:120]}")
-
-            if self.accept_delay > 0:
-                self.key_stop_event.wait(self.accept_delay)
-
-            if self.key_stop_event.is_set():
-                break
-
-            _send_key_scancode("[")
-            self.total_bracket_presses += 1
+            self.accept_spam_active = True
+            self.accept_spam_deadline_ts = now + self.accept_timeout_sec
+            self.next_accept_press_ts = now
             self.mission_detect_count += 1
-            self.last_mission_detect_ts = time.time()
-            self.last_accept_ts = time.time()
-            print("[ACCEPT] [ sent.")
+            self.last_mission_detect_ts = now
+            print(
+                f"[ACCEPT] Contract Shared detected. Spamming [ every {self.accept_delay:.2f}s "
+                f"for up to {self.accept_timeout_sec:.0f}s or until Contract Accepted:"
+            )
+            print(f"         Line: {line[:120]}")
             self.emit_state()
-            break
+
+    def tick_accept_spam(self):
+        if not self.accept_spam_active:
+            return
+
+        now = time.time()
+        if now >= self.accept_spam_deadline_ts:
+            self.accept_spam_active = False
+            print("[ACCEPT] Timeout reached (60s). Stopping spam.")
+            self.emit_state()
+            return
+
+        if now < self.next_accept_press_ts:
+            return
+
+        _send_key_scancode("[")
+        self.total_bracket_presses += 1
+        self.last_accept_ts = now
+        self.next_accept_press_ts = now + self.accept_delay
+        print("[ACCEPT] [ sent.")
+        self.emit_state()
 
 
 
@@ -774,6 +801,9 @@ class MouseDriftEngine:
 
         self.reset_log_offset_to_end()
         self.last_accept_ts = 0.0
+        self.accept_spam_active = False
+        self.accept_spam_deadline_ts = 0.0
+        self.next_accept_press_ts = 0.0
         self.key_stop_event.clear()
         self.key_running = True
 
@@ -782,6 +812,7 @@ class MouseDriftEngine:
 
     def stop_key(self):
         self.key_stop_event.set()
+        self.accept_spam_active = False
         self.key_running = False
 
     def shutdown(self):
@@ -898,6 +929,8 @@ class MouseDriftEngine:
                     except OSError:
                         if self.key_stop_event.wait(0.8):
                             break
+
+                self.tick_accept_spam()
 
                 if self.key_stop_event.wait(0.2):
                     break

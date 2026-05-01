@@ -617,7 +617,7 @@
         addNotice(`Key delay set to ${state.acceptDelay.toFixed(2)}s`);
       }
       if (state.missionDetectCount > prevState.missionDetectCount) {
-        addNotice(`Contract shared detected: [ sent after ${state.acceptDelay.toFixed(2)}s delay (total ${state.totalBracketPresses})`);
+        addNotice(`Contract shared detected: spamming [ every ${state.acceptDelay.toFixed(2)}s until accepted or timeout`);
       }
       if (state.logPath !== prevState.logPath) {
         addNotice(`Log file set: ${summarizePath(state.logPath)}`, !state.logExists);
