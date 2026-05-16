@@ -34,10 +34,11 @@
     }
 
     .wrap {
-      width: min(930px, 96vw);
+      width: min(1130px, 96vw);
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
+      gap: 10px;
     }
 
     .panel {
@@ -49,11 +50,90 @@
         inset 0 0 50px rgba(255,179,71,0.06);
       overflow: hidden;
       position: relative;
+      flex: 1;
+      padding: 18px 18px 14px;
     }
 
-    .panel {
-      width: 100%;
-      padding: 18px 18px 14px;
+    .deaths-box {
+      width: 182px;
+      flex-shrink: 0;
+      border-radius: 22px;
+      border: 1px solid rgba(255,191,95,0.34);
+      background: linear-gradient(180deg, rgba(23,20,15,0.9), rgba(18,16,12,0.95));
+      box-shadow: inset 0 0 24px rgba(255,179,71,0.08);
+      padding: 14px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .deaths-title {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #ffd27d;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,191,95,0.22);
+      flex-shrink: 0;
+    }
+
+    .deaths-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1;
+      min-height: 0;
+      padding-right: 4px;
+    }
+
+    .deaths-list::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    .deaths-list::-webkit-scrollbar-track {
+      background: rgba(255, 191, 95, 0.06);
+      border-radius: 8px;
+    }
+
+    .deaths-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 191, 95, 0.38);
+      border-radius: 8px;
+    }
+
+    .death-item {
+      border-radius: 9px;
+      border: 1px solid rgba(255,126,104,0.32);
+      background: rgba(255,126,104,0.07);
+      padding: 7px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .death-killer {
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffb29e;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .death-weapon {
+      font-size: 10px;
+      color: #a7834f;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .death-time {
+      font-size: 10px;
+      color: #7a6040;
+      line-height: 1.2;
+      font-family: monospace;
     }
 
     .hud-stage {
@@ -175,6 +255,14 @@
 <body>
   <div class="wrap">
     <div class="panel">
+      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 18px;">
+        <label for="inputModeSelect" style="font-size:13px;color:#ffd28c;letter-spacing:0.08em;">Input Mode:</label>
+        <select id="inputModeSelect" style="font-size:13px;padding:3px 10px;border-radius:7px;background:var(--input-bg);color:var(--text);border:1px solid var(--line);outline:none;">
+          <option value="auto">Auto</option>
+          <option value="sendinput">SendInput</option>
+          <option value="legacy">Legacy (mouse_event)</option>
+        </select>
+      </div>
       <div class="hud-stage">
       <svg class="svg-shell" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" aria-label="Sci-fi SVG control panel">
         <defs>
@@ -316,7 +404,7 @@
           <text x="10" y="286" text-anchor="middle" fill="#ffcc79" font-size="14" font-weight="700" letter-spacing="1.2">MOVE SEC</text>
         </g>
 
-        <g transform="translate(585,262)" filter="url(#hardGlow)" stroke="#ffc96f" fill="none" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.96">
+        <g transform="translate(525,262)" filter="url(#hardGlow)" stroke="#ffc96f" fill="none" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.96">
           <path d="M0,-110 L28,-92 L36,-56 L30,-18 L58,18 L46,40 L22,34 L10,82 L0,96 L-10,82 L-22,34 L-46,40 L-58,18 L-30,-18 L-36,-56 L-28,-92 Z"/>
           <path d="M0,-96 L16,-82 L20,-58 L16,-26 L32,-6 L26,10 L12,6 L4,44 L0,52 L-4,44 L-12,6 L-26,10 L-32,-6 L-16,-26 L-20,-58 L-16,-82 Z"/>
           <path d="M-92,12 L-58,-4 L-38,-16 L-14,-20"/>
@@ -342,7 +430,7 @@
           <rect id="f12BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
           <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F12</text>
         </g>
-        <g class="svg-btn" id="f11BtnGroup" transform="translate(651,610)" tabindex="0" role="button" aria-label="F11 toggle auto accept">
+        <g class="svg-btn" id="f11BtnGroup" transform="translate(560,610)" tabindex="0" role="button" aria-label="F11 toggle auto accept">
             <rect id="f11BtnOuter" x="0" y="0" width="82" height="74" rx="14" fill="#30261a" stroke="#ffd27d" stroke-width="3"/>
             <rect id="f11BtnInner" x="8" y="8" width="66" height="58" rx="10" fill="rgba(255,179,71,0.08)"/>
             <text x="41" y="46" text-anchor="middle" fill="#ffd27d" font-size="26" font-weight="700" filter="url(#softGlow)">F11</text>
@@ -359,6 +447,10 @@
       </aside>
       </div>
     </div>
+    <aside class="deaths-box" aria-label="Deaths">
+      <div class="deaths-title">Deaths</div>
+      <div id="deathsList" class="deaths-list"></div>
+    </aside>
   </div>
 
   <script>
@@ -375,6 +467,8 @@
       totalBracketPresses: 0,
       logPath: '',
       logExists: false,
+      deaths: [],
+      inputMode: 'auto',
     };
 
     const MOUSE_MIN_SEC = 0.6;
@@ -423,6 +517,8 @@
       f11BtnGroup: document.getElementById('f11BtnGroup'),
       f12BtnGroup: document.getElementById('f12BtnGroup'),
       pickLogBtn: document.getElementById('pickLogBtn'),
+      deathsList: document.getElementById('deathsList'),
+      inputMode: document.getElementById('inputModeSelect'),
     };
 
     const prevState = {
@@ -438,6 +534,8 @@
       lastMissionDetectTs: 0,
       logPath: state.logPath,
       logExists: state.logExists,
+      deaths: [],
+      inputMode: 'auto',
     };
 
     function buttonColors(isOn) {
@@ -513,6 +611,15 @@
       if (typeof newState.logExists === 'boolean') {
         state.logExists = newState.logExists;
       }
+      if (Array.isArray(newState.deaths)) {
+        state.deaths = newState.deaths;
+      }
+      if (typeof newState.inputMode === 'string') {
+        state.inputMode = newState.inputMode;
+        if (els.inputMode) {
+          els.inputMode.value = newState.inputMode;
+        }
+      }
     }
 
     function summarizePath(path) {
@@ -568,6 +675,43 @@
       }
     }
 
+    function renderDeaths() {
+      const list = els.deathsList;
+      list.innerHTML = '';
+      if (!state.deaths || state.deaths.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:10px;color:#5a4a30;text-align:center;margin-top:8px;';
+        empty.textContent = 'No deaths yet';
+        list.appendChild(empty);
+        return;
+      }
+      state.deaths.forEach(d => {
+        const item = document.createElement('div');
+        item.className = 'death-item';
+        const location = document.createElement('div');
+        location.className = 'death-killer';
+        location.textContent = d.location || ((d.killer && d.killer !== 'Unknown') ? d.killer : 'Unknown location');
+        const locationSource = document.createElement('div');
+        locationSource.className = 'death-weapon';
+        if (d.locationSource) {
+          locationSource.textContent = `src: ${d.locationSource}`;
+        } else if (d.weapon && d.weapon !== 'unknown weapon') {
+          locationSource.textContent = d.weapon;
+        } else {
+          locationSource.textContent = '';
+        }
+        const time = document.createElement('div');
+        time.className = 'death-time';
+        time.textContent = d.time ? `time ${d.time}` : 'time unknown';
+        item.appendChild(location);
+        if (locationSource.textContent) {
+          item.appendChild(locationSource);
+        }
+        item.appendChild(time);
+        list.appendChild(item);
+      });
+    }
+
     function render() {
       const trackingActive = Boolean(state.logPath) && state.logExists && state.keyOn;
 
@@ -576,7 +720,7 @@
       els.mouseStatusStrip.textContent = state.mouseOn ? `MOUSE ON ${state.intervalSec.toFixed(2)}s` : `MOUSE OFF ${state.intervalSec.toFixed(2)}s`;
       els.keyStatusStrip.textContent = state.keyOn
         ? `LOG WATCH ON  delay ${state.acceptDelay.toFixed(2)}s`
-        : `LOG WATCH OFF`;
+        : 'LOG WATCH OFF';
       els.pickLogBtn.classList.toggle('active', trackingActive);
       els.pickLogBtn.classList.toggle('inactive', !trackingActive);
       els.pickLogBtn.textContent = trackingActive ? 'Tracking Game.log' : 'Select Game.log';
@@ -594,6 +738,7 @@
       applyButtonState(els.f12BtnOuter, els.f12BtnInner, state.mouseOn);
 
       updateBars();
+      renderDeaths();
 
       if (state.mouseOn !== prevState.mouseOn) {
         addNotice(state.mouseOn ? 'F12: Mouse drift enabled' : 'F12: Mouse drift disabled', !state.mouseOn);
@@ -649,8 +794,17 @@
           smoothSteps: state.smoothSteps,
           moveDuration: state.moveDuration,
           acceptDelay: state.acceptDelay,
+          inputMode: state.inputMode,
         });
       }
+    }
+    // Wire input mode dropdown
+    if (els.inputMode) {
+      els.inputMode.addEventListener('change', async (e) => {
+        state.inputMode = e.target.value;
+        await pushSettings();
+        addNotice(`Input mode set to: ${state.inputMode}`);
+      });
     }
 
     async function toggleMouse() {
@@ -801,6 +955,9 @@
     window.addEventListener('pywebviewready', async () => {
       const initial = await window.pywebview.api.get_state();
       applyBackendState(initial);
+      if (els.inputMode) {
+        els.inputMode.value = state.inputMode;
+      }
       addNotice('Connected to backend');
       render();
       window.setInterval(pullState, 300);

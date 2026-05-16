@@ -1,5 +1,5 @@
 """
-Smoke test: tail Game.log and report any line containing 'mission' (case-insensitive).
+Smoke test: tail Game.log and report any line containing 'Contract Shared:'.
 Press Ctrl+C to stop.
 """
 
@@ -18,7 +18,7 @@ def tail_log(path: Path):
         time.sleep(1.0)
 
     print(f"[OK]   Watching: {path}")
-    print("       Reporting lines that contain 'Contract Shared:' and a MissionId ...\n")
+    print("       Reporting lines that contain 'Contract Shared:' ...\n")
 
     with path.open("rb") as fh:
         fh.seek(0, 2)  # start at end of file
@@ -45,7 +45,7 @@ def tail_log(path: Path):
                 line = raw.decode("utf-8", errors="ignore").strip()
                 if not line:
                     continue
-                if "missionid" in line.lower() and "Contract Shared:" in line:
+                if "contract shared:" in line.lower():
                     print(f"[HIT]  {line}")
 
         time.sleep(0.2)

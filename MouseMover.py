@@ -45,6 +45,7 @@ _INPUT_KEYBOARD = 1
 _MOUSEEVENTF_MOVE     = 0x0001
 _KEYEVENTF_SCANCODE   = 0x0008
 _KEYEVENTF_KEYUP      = 0x0002
+_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 # Scan codes for keys Star Citizen commonly binds to accept actions
 _SCAN_CODES: dict[str, int] = {
@@ -64,8 +65,83 @@ def _get_scan_code(char: str) -> int:
     return ctypes.windll.user32.MapVirtualKeyW(vk & 0xFF, 0)
 
 
+def _is_star_citizen_foreground() -> bool:
+    hwnd = ctypes.windll.user32.GetForegroundWindow()
+    if not hwnd:
+        return False
+
+    # Prefer process-name matching; window titles can change after alt-tab.
+    try:
+        pid = wintypes.DWORD(0)
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value:
+            h_process = ctypes.windll.kernel32.OpenProcess(
+                _PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value
+            )
+            if h_process:
+                try:
+                    buf_size = wintypes.DWORD(1024)
+                    exe_buf = ctypes.create_unicode_buffer(1024)
+                    ok = ctypes.windll.kernel32.QueryFullProcessImageNameW(
+                        h_process, 0, exe_buf, ctypes.byref(buf_size)
+                    )
+                    if ok:
+                        exe_name = Path(exe_buf.value).name.lower()
+                        if "starcitizen" in exe_name:
+                            return True
+                finally:
+                    ctypes.windll.kernel32.CloseHandle(h_process)
+    except Exception:
+        pass
+
+    title_len = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+    if title_len <= 0:
+        return False
+
+    title_buf = ctypes.create_unicode_buffer(title_len + 1)
+    ctypes.windll.user32.GetWindowTextW(hwnd, title_buf, title_len + 1)
+    title = title_buf.value.lower()
+    return "star citizen" in title or "starcitizen" in title
+
+
+def _is_process_elevated() -> bool:
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
+def _send_mouse_move_legacy(dx: int, dy: int) -> None:
+    ctypes.windll.user32.mouse_event(_MOUSEEVENTF_MOVE, int(dx), int(dy), 0, 0)
+
+
 def _send_mouse_move(dx: int, dy: int) -> None:
-    """Send a relative mouse movement via SendInput (picked up by Raw Input games)."""
+    """Send relative movement; use a Star Citizen-specific fallback path when needed."""
+    if dx == 0 and dy == 0:
+        return
+
+    # Import engine singleton if available
+    engine = globals().get("engine")
+    input_mode = getattr(engine, "input_mode", "auto")
+
+    if input_mode == "legacy":
+        _send_mouse_move_legacy(dx, dy)
+        return
+    elif input_mode == "sendinput":
+        inp = _INPUT()
+        inp.type = _INPUT_MOUSE
+        inp._u.mi.dx = dx
+        inp._u.mi.dy = dy
+        inp._u.mi.mouseData = 0
+        inp._u.mi.dwFlags = _MOUSEEVENTF_MOVE
+        inp._u.mi.time = 0
+        inp._u.mi.dwExtraInfo = None
+        ctypes.windll.user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(inp))
+        return
+    # auto mode: prefer SendInput, fallback to legacy if Star Citizen is foreground
+    if _is_star_citizen_foreground():
+        _send_mouse_move_legacy(dx, dy)
+        return
     inp = _INPUT()
     inp.type = _INPUT_MOUSE
     inp._u.mi.dx = dx
@@ -101,8 +177,16 @@ def _send_key_scancode(char: str) -> None:
 
 import webview
 from pynput.keyboard import Controller as KeyboardController
-from pynput.keyboard import Key, Listener as KeyboardListener
 from pynput.mouse import Controller as MouseController
+
+
+VK_F11 = 0x7A
+VK_F12 = 0x7B
+WM_HOTKEY = 0x0312
+WM_QUIT = 0x0012
+HOTKEY_ID_F11 = 1
+HOTKEY_ID_F12 = 2
+MOD_NOREPEAT = 0x4000
 
 
 EMBEDDED_HTML = r"""
@@ -520,14 +604,16 @@ class MouseDriftEngine:
 
         self.mouse_running = False
         self.key_running = False
+        self.death_watch_running = False
 
         self.mouse_stop_event = threading.Event()
-        self.key_stop_event = threading.Event()
+        self.log_stop_event = threading.Event()  # controls the shared log-reading thread
 
         self.mouse_thread = None
-        self.key_thread = None
-        self.hotkey_listener = None
-        self.pressed_hotkeys = set()
+        self.log_thread = None
+        self.hotkey_thread = None
+        self.hotkey_thread_id = 0
+        self.hotkey_stop_event = threading.Event()
 
         self.window = None
         self.lock = threading.Lock()
@@ -543,6 +629,11 @@ class MouseDriftEngine:
         self.total_bracket_presses = 0
         self.last_mission_detect_ts = 0.0
 
+        self.death_list = []
+        self.local_player_name = None
+        self.last_location_hint = "Unknown"
+        self.last_location_source = ""
+
         self.log_path = self.find_default_log_path()
         self.log_offset = 0
         self.last_accept_ts = 0.0
@@ -553,6 +644,33 @@ class MouseDriftEngine:
         self.origin = None
         self.move_count = 0
 
+        self.input_mode = "auto"  # "auto", "sendinput", "legacy"
+        self._load_settings()
+
+    def _settings_path(self):
+        if hasattr(sys, "_MEIPASS"):
+            base = Path(sys.executable).parent
+        else:
+            base = Path(__file__).resolve().parent
+        return base / "mousedrift_settings.json"
+
+    def _load_settings(self):
+        try:
+            data = json.loads(self._settings_path().read_text(encoding="utf-8"))
+            if data.get("deathWatchOn"):
+                self.death_watch_running = True  # will auto-start after window attaches
+            if data.get("inputMode") in ("auto", "sendinput", "legacy"):
+                self.input_mode = data["inputMode"]
+        except Exception:
+            pass
+
+    def _save_settings(self):
+        try:
+            data = {"deathWatchOn": self.death_watch_running, "inputMode": self.input_mode}
+            self._settings_path().write_text(json.dumps(data), encoding="utf-8")
+        except Exception:
+            pass
+
     def find_default_log_path(self):
         install_root = Path(r"C:\Program Files\Roberts Space Industries\StarCitizen")
         # Default to LIVE; users can still override from the UI/API.
@@ -560,6 +678,8 @@ class MouseDriftEngine:
 
     def attach_window(self, window):
         self.window = window
+        self._ensure_log_thread_running(reset_offset=True)
+        self.emit_state()
 
     def emit_state(self):
         if not self.window:
@@ -568,6 +688,7 @@ class MouseDriftEngine:
         state = {
             "mouseOn": self.mouse_running,
             "keyOn": self.key_running,
+            "deathWatchOn": self.death_watch_running,
             "intervalMs": self.interval_ms,
             "maxPixels": self.max_pixels,
             "movesBeforeReturn": self.moves_before_return,
@@ -579,6 +700,8 @@ class MouseDriftEngine:
             "lastMissionDetectTs": self.last_mission_detect_ts,
             "logPath": self.log_path,
             "logExists": Path(self.log_path).is_file(),
+            "deaths": list(self.death_list),
+            "inputMode": self.input_mode,
         }
 
         js = f"window.app && window.app.updateFromPython({json.dumps(state)});"
@@ -588,41 +711,57 @@ class MouseDriftEngine:
             pass
 
     def start_hotkeys(self):
-        if self.hotkey_listener is not None:
+        if self.hotkey_thread is not None:
             return
 
-        def on_press(key):
+        def hotkey_loop():
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+            self.hotkey_thread_id = kernel32.GetCurrentThreadId()
+
+            registered = []
+
             try:
-                if key in self.pressed_hotkeys:
+                if user32.RegisterHotKey(None, HOTKEY_ID_F12, MOD_NOREPEAT, VK_F12):
+                    registered.append(HOTKEY_ID_F12)
+                if user32.RegisterHotKey(None, HOTKEY_ID_F11, MOD_NOREPEAT, VK_F11):
+                    registered.append(HOTKEY_ID_F11)
+
+                if not registered:
                     return
 
-                if key == Key.f12:
-                    self.pressed_hotkeys.add(key)
-                    self.toggle_mouse()
-                elif key == Key.f11:
-                    self.pressed_hotkeys.add(key)
-                    self.toggle_key()
-            except Exception:
-                pass
+                msg = wintypes.MSG()
+                while not self.hotkey_stop_event.is_set():
+                    result = user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
+                    if result <= 0:
+                        break
 
-        def on_release(key):
-            try:
-                self.pressed_hotkeys.discard(key)
-            except Exception:
-                pass
+                    if msg.message == WM_HOTKEY:
+                        if msg.wParam == HOTKEY_ID_F12:
+                            self.toggle_mouse()
+                        elif msg.wParam == HOTKEY_ID_F11:
+                            self.toggle_key()
+            finally:
+                for hotkey_id in registered:
+                    try:
+                        user32.UnregisterHotKey(None, hotkey_id)
+                    except Exception:
+                        pass
+                self.hotkey_thread_id = 0
 
-        self.hotkey_listener = KeyboardListener(on_press=on_press, on_release=on_release)
-        self.hotkey_listener.daemon = True
-        self.hotkey_listener.start()
+        self.hotkey_stop_event.clear()
+        self.hotkey_thread = threading.Thread(target=hotkey_loop, daemon=True)
+        self.hotkey_thread.start()
 
     def stop_hotkeys(self):
-        if self.hotkey_listener is not None:
-            try:
-                self.hotkey_listener.stop()
-            except Exception:
-                pass
-            self.hotkey_listener = None
-        self.pressed_hotkeys.clear()
+        if self.hotkey_thread is not None:
+            self.hotkey_stop_event.set()
+            if self.hotkey_thread_id:
+                try:
+                    ctypes.windll.user32.PostThreadMessageW(self.hotkey_thread_id, WM_QUIT, 0, 0)
+                except Exception:
+                    pass
+            self.hotkey_thread = None
 
     def update_settings(self, settings):
         with self.lock:
@@ -634,7 +773,9 @@ class MouseDriftEngine:
             self.smooth_steps = max(1, int(settings.get("smoothSteps", self.smooth_steps)))
             self.move_duration = max(0.0, float(settings.get("moveDuration", self.move_duration)))
             self.accept_delay = max(0.01, float(settings.get("acceptDelay", self.accept_delay)))
-
+            if settings.get("inputMode") in ("auto", "sendinput", "legacy"):
+                self.input_mode = settings["inputMode"]
+                self._save_settings()
         self.emit_state()
         return {"ok": True}
 
@@ -642,6 +783,7 @@ class MouseDriftEngine:
         return {
             "mouseOn": self.mouse_running,
             "keyOn": self.key_running,
+            "deathWatchOn": self.death_watch_running,
             "intervalMs": self.interval_ms,
             "maxPixels": self.max_pixels,
             "movesBeforeReturn": self.moves_before_return,
@@ -653,6 +795,8 @@ class MouseDriftEngine:
             "lastMissionDetectTs": self.last_mission_detect_ts,
             "logPath": self.log_path,
             "logExists": Path(self.log_path).is_file(),
+            "deaths": list(self.death_list),
+            "inputMode": self.input_mode,
         }
 
     def set_log_path(self, path):
@@ -697,9 +841,88 @@ class MouseDriftEngine:
         except OSError:
             self.log_offset = 0
 
-    def is_mission_invite_line(self, line):
-        # Must contain MissionId (case-insensitive) and exact phrase "Contract Shared:"
-        return "missionid" in line.lower() and "Contract Shared:" in line
+    def try_detect_player_name(self, line):
+        """Detect the local character name from AccountLoginCharacterStatus log events."""
+        if self.local_player_name:
+            return
+        if "AccountLoginCharacterStatus_Character" in line:
+            m = re.search(r"name='([^']+)'", line)
+            if not m:
+                m = re.search(r"character[^']*'([^']+)'", line, re.IGNORECASE)
+            if m:
+                self.local_player_name = m.group(1)
+                print(f"[DEATH] Detected local player: {self.local_player_name}")
+
+    def is_actor_death_line(self, line):
+        if not self.local_player_name:
+            return False
+        return "CActor::Kill:" in line and f"CActor::Kill: '{self.local_player_name}'" in line
+
+    def parse_death_line(self, line):
+        m = re.search(
+            r"CActor::Kill: '[^']+' \[\d+\].*?killed by '([^']+)' \[\d+\] using '([^']+)'",
+            line,
+        )
+        if not m:
+            return None
+        killer = m.group(1)
+        weapon = re.sub(r'_\d+$', '', m.group(2))
+        ts_match = re.match(r'<\d{4}-\d{2}-\d{2}T(\d{2}:\d{2}:\d{2})\.', line)
+        time_str = ts_match.group(1) if ts_match else ""
+        return {"killer": killer, "weapon": weapon, "time": time_str}
+
+    def parse_line_time(self, line):
+        ts_match = re.match(r'<\d{4}-\d{2}-\d{2}T(\d{2}:\d{2}:\d{2})\.', line)
+        return ts_match.group(1) if ts_match else ""
+
+    def extract_location_hint_from_line(self, line):
+        m = re.search(r"locationName\[([^\]]+)\]", line)
+        if m:
+            return m.group(1), "locationName"
+
+        m = re.search(r"Added notification \"([^\"]+)\"", line)
+        if m:
+            msg = m.group(1).strip()
+            if any(token in msg for token in ("Armistice Zone", "Jurisdiction", "Medical Bed", "Incapacitated")):
+                return msg, "notification"
+
+        m = re.search(r"\bLocation\[([^\]]+)\]", line)
+        if m:
+            return f"Location {m.group(1)}", "location-id"
+
+        return None, None
+
+    def update_location_hint(self, line):
+        hint, source = self.extract_location_hint_from_line(line)
+        if hint:
+            self.last_location_hint = hint
+            self.last_location_source = source or ""
+
+    def is_incapacitated_line(self, line):
+        return "Incapacitated:" in line and "Time to Death" in line
+
+    def is_corpse_recovery_line(self, line):
+        return "CSCActorCorpseUtils::PopulateItemPortForItemRecoveryEntitlement" in line
+
+    def add_death_event(self, killer, weapon, time_str, location_hint=None, location_source=None):
+        location_value = location_hint or self.last_location_hint or "Unknown"
+        source_value = location_source if location_source is not None else self.last_location_source
+        entry = {
+            "killer": killer,
+            "weapon": weapon,
+            "time": time_str,
+            "location": location_value,
+            "locationSource": source_value,
+        }
+        if self.death_list and self.death_list[0] == entry:
+            return
+        self.death_list.insert(0, entry)
+        if len(self.death_list) > 50:
+            self.death_list = self.death_list[:50]
+        self.emit_state()
+
+    def is_contract_shared_line(self, line):
+        return "contract shared:" in line.lower()
 
     def is_contract_accepted_line(self, line):
         return "Contract Accepted:" in line
@@ -712,10 +935,49 @@ class MouseDriftEngine:
 
     def process_new_log_data(self, blob):
         now = time.time()
+        watch_deaths = True
+        watch_missions = self.key_running
 
         for raw_line in blob.splitlines():
             line = raw_line.decode("utf-8", errors="ignore").strip()
             if not line:
+                continue
+
+            if watch_deaths:
+                self.try_detect_player_name(line)
+                self.update_location_hint(line)
+
+            if watch_deaths and self.is_actor_death_line(line):
+                death = self.parse_death_line(line)
+                if death:
+                    line_loc, line_loc_source = self.extract_location_hint_from_line(line)
+                    self.add_death_event(
+                        death["killer"],
+                        death["weapon"],
+                        death["time"],
+                        location_hint=line_loc,
+                        location_source=line_loc_source,
+                    )
+                    print(f"[DEATH] Killed by {death['killer']} with {death['weapon']}")
+                continue
+
+            if watch_deaths and (self.is_incapacitated_line(line) or self.is_corpse_recovery_line(line)):
+                # Newer log builds often omit killer/weapon in CActor::Kill, so we still show a death marker.
+                weapon = "unknown weapon"
+                if self.is_incapacitated_line(line):
+                    weapon = "incapacitated"
+                line_loc, line_loc_source = self.extract_location_hint_from_line(line)
+                self.add_death_event(
+                    "Unknown",
+                    weapon,
+                    self.parse_line_time(line),
+                    location_hint=line_loc,
+                    location_source=line_loc_source,
+                )
+                print("[DEATH] Fallback death signal detected (killer/weapon unavailable in log line).")
+                continue
+
+            if not watch_missions:
                 continue
 
             if self.is_contract_accepted_line(line):
@@ -725,7 +987,7 @@ class MouseDriftEngine:
                     self.emit_state()
                 continue
 
-            if not self.is_mission_invite_line(line):
+            if not self.is_contract_shared_line(line):
                 continue
 
             self.accept_spam_active = True
@@ -761,6 +1023,22 @@ class MouseDriftEngine:
         print("[ACCEPT] [ sent.")
         self.emit_state()
 
+    def _log_thread_needed(self):
+        return self.key_running or self.death_watch_running or (self.window is not None)
+
+    def _ensure_log_thread_running(self, reset_offset=False):
+        if reset_offset:
+            self.reset_log_offset_to_end()
+        if self.log_thread is not None and self.log_thread.is_alive():
+            return
+        self.log_stop_event.clear()
+        self.log_thread = threading.Thread(target=self.log_loop, daemon=True)
+        self.log_thread.start()
+
+    def _stop_log_thread_if_idle(self):
+        if self._log_thread_needed():
+            return
+        self.log_stop_event.set()
 
 
     def toggle_mouse(self):
@@ -776,6 +1054,14 @@ class MouseDriftEngine:
             self.stop_key()
         else:
             self.start_key()
+        self.emit_state()
+        return self.get_state()
+
+    def toggle_death_watch(self):
+        if self.death_watch_running:
+            self.stop_death_watch()
+        else:
+            self.start_death_watch()
         self.emit_state()
         return self.get_state()
 
@@ -799,25 +1085,35 @@ class MouseDriftEngine:
         if self.key_running:
             return
 
-        self.reset_log_offset_to_end()
         self.last_accept_ts = 0.0
         self.accept_spam_active = False
         self.accept_spam_deadline_ts = 0.0
         self.next_accept_press_ts = 0.0
-        self.key_stop_event.clear()
         self.key_running = True
-
-        self.key_thread = threading.Thread(target=self.key_loop, daemon=True)
-        self.key_thread.start()
+        self._ensure_log_thread_running(reset_offset=True)
 
     def stop_key(self):
-        self.key_stop_event.set()
         self.accept_spam_active = False
         self.key_running = False
+        self._stop_log_thread_if_idle()
+
+    def start_death_watch(self):
+        if self.death_watch_running:
+            return
+        self.death_watch_running = True
+        self._save_settings()
+        self._ensure_log_thread_running(reset_offset=True)
+
+    def stop_death_watch(self):
+        self.death_watch_running = False
+        self._save_settings()
+        self._stop_log_thread_if_idle()
 
     def shutdown(self):
         self.stop_mouse()
         self.stop_key()
+        self.stop_death_watch()
+        self.log_stop_event.set()
         self.stop_hotkeys()
 
     def random_vector(self, max_pixels):
@@ -900,19 +1196,22 @@ class MouseDriftEngine:
             self.mouse_running = False
             self.emit_state()
 
-    def key_loop(self):
+    def log_loop(self):
         try:
-            while not self.key_stop_event.is_set():
+            while not self.log_stop_event.is_set():
+                if not self._log_thread_needed():
+                    break
+
                 path = Path(self.log_path)
                 if not path.is_file():
-                    if self.key_stop_event.wait(0.8):
+                    if self.log_stop_event.wait(0.8):
                         break
                     continue
 
                 try:
                     size = path.stat().st_size
                 except OSError:
-                    if self.key_stop_event.wait(0.8):
+                    if self.log_stop_event.wait(0.8):
                         break
                     continue
 
@@ -927,15 +1226,16 @@ class MouseDriftEngine:
                             self.log_offset = handle.tell()
                         self.process_new_log_data(blob)
                     except OSError:
-                        if self.key_stop_event.wait(0.8):
+                        if self.log_stop_event.wait(0.8):
                             break
 
-                self.tick_accept_spam()
+                if self.key_running:
+                    self.tick_accept_spam()
 
-                if self.key_stop_event.wait(0.2):
+                if self.log_stop_event.wait(0.2):
                     break
         finally:
-            self.key_running = False
+            self.log_thread = None
             self.emit_state()
 
 
@@ -955,6 +1255,9 @@ class Api:
     def toggle_key(self):
         return self.engine.toggle_key()
 
+    def toggle_death_watch(self):
+        return self.engine.toggle_death_watch()
+
     def choose_log_file(self):
         return self.engine.choose_log_file()
 
@@ -971,6 +1274,9 @@ def ui_path():
 
 
 if __name__ == "__main__":
+    if not _is_process_elevated():
+        print("[WARN] Running without Administrator rights. If Star Citizen is elevated, global hotkeys/input injection may fail.")
+
     engine = MouseDriftEngine()
     api = Api(engine)
 
@@ -978,7 +1284,7 @@ if __name__ == "__main__":
         "Mouse Drift HUD",
         url=ui_path(),
         js_api=api,
-        width=930,
+        width=1260,
         height=670,
     )
 
