@@ -199,6 +199,9 @@ cython_debug/
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
 
+# Local debug exports
+lt_crosby_*.csv
+
 # Local code-signing secrets (keep in repo folder, never commit)
 signing/*.pfx
 signing/*.p12
