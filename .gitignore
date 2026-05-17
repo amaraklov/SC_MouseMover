@@ -202,6 +202,9 @@ cython_debug/
 # Local debug exports
 lt_crosby_*.csv
 
+# Local runtime settings
+mousedrift_settings.json
+
 # Local code-signing secrets (keep in repo folder, never commit)
 signing/*.pfx
 signing/*.p12
