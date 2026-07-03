@@ -439,7 +439,7 @@ EMBEDDED_HTML = r"""
                 </button>
                 <button id="toggleKeyBtn" class="mini-button">
                     <strong>F11 Toggle Auto Accept - OFF</strong>
-                    <span>Sends [ after delay when contract shared</span>
+                    <span>Sends the mapped share key after delay when contract shared</span>
                 </button>
             </div>
         </aside>
@@ -638,6 +638,7 @@ class MouseDriftEngine:
         self.log_offset = 0
         self.last_accept_ts = 0.0
         self.accept_spam_active = False
+        self.accept_spam_key = "["
         self.accept_spam_deadline_ts = 0.0
         self.next_accept_press_ts = 0.0
 
@@ -922,12 +923,38 @@ class MouseDriftEngine:
         self.emit_state()
 
     def is_contract_shared_line(self, line):
-        return "contract shared:" in line.lower()
+        lowered = line.lower()
+        if "contract shared:" in lowered:
+            return True
+        return False
+
+    def is_contract_available_line(self, line):
+        return "contract available:" in line.lower()
 
     def is_contract_accepted_line(self, line):
         return "Contract Accepted:" in line
 
+    def extract_contract_shared_payload(self, line):
+        match = re.search(r"contract (?:shared|available):\s*(.*)", line, re.IGNORECASE)
+        if not match:
+            return line.strip()
+
+        payload = re.sub(r"\bmissionid\b.*", "", match.group(1), flags=re.IGNORECASE)
+        return payload.strip()
+
     def extract_accept_key(self, line):
+        lowered = line.lower()
+        if "contract available:" in lowered and "action: next" in lowered:
+            return "]"
+        if "contract available:" in lowered:
+            return "]"
+
+        payload = self.extract_contract_shared_payload(line)
+        normalized = payload.lower()
+        if re.search(r"\baccept\b", normalized):
+            return "]"
+        if "salvagecontractortitle" in normalized or normalized.startswith("~mission(contractor|"):
+            return "]"
         return "["
 
     def press_accept_key(self, key_text):
@@ -983,20 +1010,32 @@ class MouseDriftEngine:
             if self.is_contract_accepted_line(line):
                 if self.accept_spam_active:
                     self.accept_spam_active = False
+                    self.accept_spam_key = "["
                     print("[ACCEPT] Contract Accepted detected. Stopping spam.")
                     self.emit_state()
+                continue
+
+            if self.is_contract_available_line(line):
+                deny_key = "]"
+                self.press_accept_key(deny_key)
+                self.total_bracket_presses += 1
+                self.last_accept_ts = now
+                print("[ACCEPT] Contract Available detected. ] sent to deny notification.")
+                self.emit_state()
                 continue
 
             if not self.is_contract_shared_line(line):
                 continue
 
+            accept_key = self.extract_accept_key(line)
             self.accept_spam_active = True
+            self.accept_spam_key = accept_key
             self.accept_spam_deadline_ts = now + self.accept_timeout_sec
             self.next_accept_press_ts = now
             self.mission_detect_count += 1
             self.last_mission_detect_ts = now
             print(
-                f"[ACCEPT] Contract Shared detected. Spamming [ every {self.accept_delay:.2f}s "
+                f"[ACCEPT] Contract notification detected. Spamming {accept_key} every {self.accept_delay:.2f}s "
                 f"for up to {self.accept_timeout_sec:.0f}s or until Contract Accepted:"
             )
             print(f"         Line: {line[:120]}")
@@ -1009,6 +1048,7 @@ class MouseDriftEngine:
         now = time.time()
         if now >= self.accept_spam_deadline_ts:
             self.accept_spam_active = False
+            self.accept_spam_key = "["
             print("[ACCEPT] Timeout reached (60s). Stopping spam.")
             self.emit_state()
             return
@@ -1016,11 +1056,11 @@ class MouseDriftEngine:
         if now < self.next_accept_press_ts:
             return
 
-        _send_key_scancode("[")
+        self.press_accept_key(self.accept_spam_key)
         self.total_bracket_presses += 1
         self.last_accept_ts = now
         self.next_accept_press_ts = now + self.accept_delay
-        print("[ACCEPT] [ sent.")
+        print(f"[ACCEPT] {self.accept_spam_key} sent.")
         self.emit_state()
 
     def _log_thread_needed(self):
@@ -1087,6 +1127,7 @@ class MouseDriftEngine:
 
         self.last_accept_ts = 0.0
         self.accept_spam_active = False
+        self.accept_spam_key = "["
         self.accept_spam_deadline_ts = 0.0
         self.next_accept_press_ts = 0.0
         self.key_running = True
@@ -1094,6 +1135,7 @@ class MouseDriftEngine:
 
     def stop_key(self):
         self.accept_spam_active = False
+        self.accept_spam_key = "["
         self.key_running = False
         self._stop_log_thread_if_idle()
 

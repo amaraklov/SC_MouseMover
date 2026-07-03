@@ -63,5 +63,5 @@ Build output:
 
 ## Notes
 
-- You only have to download the Exe from the root folder, but I've included the entire source, so you can look through it and make sure it's safe, as virus sofware ay identify it as a key injection hack, it's not it's just moving the mouse, and itting [ if activated to accept missions.
+- You only have to download the Exe from the root folder, but I've included the entire source, so you can look through it and make sure it's safe. Antivirus software may identify it as input injection software because it moves the mouse and sends the mapped contract-share key when mission automation is enabled.
 - If hotkeys do not respond, run with adequate desktop/input permissions.
